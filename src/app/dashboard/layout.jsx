@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }) {
                     {/* ── Brand ── */}
                     <div className="relative px-5 py-4 shrink-0">
                         <img
-                            src="/logoac1.png"
+                            src="/logoac2.png"
                             alt="Logo Ac"
                             className="h-26 w-auto max-w-full object-contain object-left"
                         />
