@@ -12,7 +12,7 @@ export const metadata = {
 export default function DashboardLayout({ children }) {
     return (
         <ClerkProvider>
-        <div className="h-screen w-full overflow-hidden bg-white">
+        <div className="h-screen w-full overflow-hidden bg-[#f2e0de]">
             <div className="flex h-full w-full">
                 {/* Sidebar */}
                 <aside className="hidden md:flex h-screen w-[230px] shrink-0 flex-col bg-gray-900 text-white border-r border-white/[0.04] selection:bg-violet-500/30 font-[family-name:var(--font-inter)]">
