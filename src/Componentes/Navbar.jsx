@@ -4,19 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
-import { usePathname } from "next/navigation";
-
 const navItems = [
-  { label: "Modelo integral", href: "/#porque-elegirnos" },
-  { label: "Atencion coordinada", href: "/#servicios" },
-  { label: "Cobertura", href: "/#casos-clinicos" },
-  { label: "Servicios", href: "/servicios" },
+  { label: "Inicio", href: "/#inicio" },
+  { label: "Sobre mí", href: "/#sobre-mi" },
+  { label: "Servicios", href: "/#servicios" },
+  { label: "Publicaciones", href: "/#publicaciones" },
   { label: "Contacto", href: "/contacto" },
 ];
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const isHome = pathname === "/";
   const [isOpen, setIsOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -25,7 +21,7 @@ export default function Navbar() {
 
     const updateProgress = () => {
       const y = window.scrollY || 0;
-      const next = Math.min(y / 240, 1);
+      const next = Math.min(y / 200, 1);
 
       setScrollProgress((current) => {
         if (Math.abs(current - next) < 0.01) return current;
@@ -44,59 +40,44 @@ export default function Navbar() {
 
     return () => {
       window.removeEventListener("scroll", onScroll);
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId);
-      }
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
     };
   }, []);
 
-  const topAlpha = 0.02 + scrollProgress * 0.82;
-  const middleAlpha = 0.01 + scrollProgress * 0.74;
-  const bottomAlpha = scrollProgress * 0.62;
-  const borderAlpha = scrollProgress * 0.24;
-  const shadowAlpha = scrollProgress * 0.2;
-  const blurPx = scrollProgress * 22;
-  const borderWidth = scrollProgress > 0.02 ? 1 : 0;
-  const onTopHero = isHome && scrollProgress < 0.22;
-  const navTextColor = onTopHero ? "rgba(255,255,255,0.93)" : "#0f5a52";
-  const mobileButtonTextColor = onTopHero ? "#ffffff" : "#1a756a";
-  const mobileButtonBg = onTopHero ? "rgba(255,255,255,0.16)" : "#ffffff";
-  const mobileButtonBorder = onTopHero ? "rgba(255,255,255,0.4)" : "#8adfce";
+  const bgAlpha = 0.05 + scrollProgress * 0.9;
+  const blurPx = scrollProgress * 20;
+  const borderAlpha = scrollProgress * 0.22;
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 transition-[background,box-shadow,border-color,border-width,backdrop-filter] duration-300"
+      className="fixed inset-x-0 top-0 z-50 transition-[background,backdrop-filter,border-color,border-width] duration-300"
       style={{
-        background: `linear-gradient(180deg, rgba(236,251,247,${topAlpha}) 0%, rgba(224,248,241,${middleAlpha}) 48%, rgba(207,242,233,${bottomAlpha}) 100%)`,
-        borderBottomColor: `rgba(52, 205, 180, ${borderAlpha})`,
+        background: `rgba(28,43,69,${bgAlpha})`,
+        backdropFilter: blurPx > 0 ? `blur(${blurPx}px) saturate(120%)` : undefined,
+        borderBottomColor: `rgba(201,165,90,${borderAlpha})`,
         borderBottomStyle: "solid",
-        borderBottomWidth: `${borderWidth}px`,
-        boxShadow: `0 12px 30px -24px rgba(15,90,82,${shadowAlpha})`,
-        backdropFilter: `blur(${blurPx}px) saturate(110%)`,
+        borderBottomWidth: scrollProgress > 0.05 ? "1px" : "0px",
       }}
     >
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:h-20 md:h-24 md:px-8 lg:px-6">
-        <Link href="/#inicio" aria-label="Ir al inicio" className="group flex shrink-0 items-center gap-3 sm:gap-4">
-          <div className="relative shrink-0">
-            <Image
-              src="/logo_transparent.png"
-              alt="Logo SaludB"
-              width={84}
-              height={84}
-              priority
-              className="h-[60px] w-[60px] object-contain sm:h-[72px] sm:w-[72px]"
-            />
-          </div>
+        <Link href="/#inicio" aria-label="Ir al inicio" className="flex shrink-0 items-center gap-3">
+          <Image
+            src="/logocatarsisfull.png"
+            alt="Logo Catarsis"
+            width={62}
+            height={62}
+            priority
+            className="h-13.5 w-auto object-contain sm:h-16"
+          />
         </Link>
 
-        <nav aria-label="Menu principal" className="hidden lg:block">
-          <ul className="flex items-center gap-6 xl:gap-9">
+        <nav aria-label="Menú principal" className="hidden lg:block">
+          <ul className="flex items-center gap-7 xl:gap-10">
             {navItems.map((item) => (
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  className="text-[12px] font-medium uppercase tracking-[0.18em] transition-colors duration-300"
-                  style={{ color: navTextColor }}
+                  className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/75 transition-colors duration-200 hover:text-[#c8647a]"
                 >
                   {item.label}
                 </Link>
@@ -105,46 +86,40 @@ export default function Navbar() {
           </ul>
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <Link
             href="/agendaProfesionales"
-            aria-label="Agendar evaluacion"
-            className="hidden rounded-full border border-[#34cdb4] bg-[#34cdb4] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition duration-300 ease-out hover:bg-[#2ab9a2] sm:inline-flex sm:px-5 sm:py-2.5 sm:text-xs"
+            aria-label="Agendar sesión"
+            className="hidden border border-[#c8647a] px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#c8647a] transition duration-300 hover:bg-[#c8647a] hover:text-white sm:inline-flex sm:px-6 sm:py-2.5 sm:text-xs"
           >
-            Agendar evaluacion
+            Agendar sesión
           </Link>
-
           <button
             type="button"
-            aria-label={isOpen ? "Cerrar menu" : "Abrir menu"}
+            aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={isOpen}
-            onClick={() => setIsOpen((prev) => !prev)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full transition sm:h-10 sm:w-10 lg:hidden"
-            style={{
-              borderColor: mobileButtonBorder,
-              backgroundColor: mobileButtonBg,
-              color: mobileButtonTextColor,
-            }}
+            onClick={() => setIsOpen((p) => !p)}
+            className="inline-flex h-9 w-9 items-center justify-center text-white/85 transition hover:text-white lg:hidden"
           >
-            {isOpen ? <X className="h-4 w-4 sm:h-5 sm:w-5" /> : <Menu className="h-4 w-4 sm:h-5 sm:w-5" />}
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
       <div
         className={[
-          "overflow-hidden border-t border-[#bfeee3] bg-[#f3fffc] backdrop-blur-xl lg:hidden",
-          isOpen ? "max-h-[420px] opacity-100" : "max-h-0 opacity-0",
+          "overflow-hidden border-t border-white/10 bg-[#1c2b45] lg:hidden",
+          isOpen ? "max-h-105 opacity-100" : "max-h-0 opacity-0",
           "transition-all duration-300 ease-out",
         ].join(" ")}
       >
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 py-4 sm:gap-2 sm:px-5 sm:py-5 md:px-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 py-4 md:px-8">
           {navItems.map((item) => (
             <Link
               key={item.label}
               href={item.href}
               onClick={() => setIsOpen(false)}
-              className="rounded-lg border border-transparent px-4 py-3 text-[11px] font-medium uppercase tracking-[0.16em] text-[#1a756a] transition duration-300 hover:border-[#bfeee3] hover:bg-[#ecfbf7] sm:text-xs"
+              className="px-4 py-3 text-[11px] font-medium uppercase tracking-[0.16em] text-white/70 transition hover:text-[#c8647a]"
             >
               {item.label}
             </Link>
@@ -152,10 +127,10 @@ export default function Navbar() {
           <Link
             href="/agendaProfesionales"
             onClick={() => setIsOpen(false)}
-            aria-label="Agendar evaluacion desde menu movil"
-            className="mt-2 rounded-lg border border-[#34cdb4] bg-[#34cdb4] px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition duration-300 hover:bg-[#2ab9a2] sm:text-xs"
+            aria-label="Agendar sesión desde menú móvil"
+            className="mt-2 border border-[#c8647a] px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c8647a] transition hover:bg-[#c8647a] hover:text-white"
           >
-            Agendar evaluacion
+            Agendar sesión
           </Link>
         </div>
       </div>

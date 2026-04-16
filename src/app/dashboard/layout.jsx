@@ -19,15 +19,11 @@ export default function DashboardLayout({ children }) {
 
                     {/* ── Brand ── */}
                     <div className="relative px-5 py-4 shrink-0">
-                        <div className="relative flex items-center gap-2.5">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-fuchsia-600 shadow-lg shadow-violet-500/20">
-                                <span className="text-[10px] font-black text-white leading-none tracking-tight">AC</span>
-                            </div>
-                            <div className="leading-none">
-                                <div className="text-[13px] font-medium tracking-[-0.01em] text-white/90">AgendaClinica</div>
-                                <div className="mt-[3px] text-[10px] font-light text-white/30">Panel admin</div>
-                            </div>
-                        </div>
+                        <img
+                            src="/agendalogo1.png"
+                            alt="Logo Catarsis"
+                            className="h-18 w-auto max-w-full object-contain object-left"
+                        />
                     </div>
 
                     {/* ── Navigation ── */}

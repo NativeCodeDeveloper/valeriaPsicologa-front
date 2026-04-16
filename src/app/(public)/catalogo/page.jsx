@@ -523,7 +523,7 @@ function CatalogoSuspense(){
                                 {/* Badge */}
                                 <div className="absolute left-4 top-4">
                                     <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold tracking-[0.22em] text-slate-800 ring-1 ring-slate-200 backdrop-blur">
-                                        SALUDB
+                                        Catarsis
                                     </span>
                                 </div>
                             </div>

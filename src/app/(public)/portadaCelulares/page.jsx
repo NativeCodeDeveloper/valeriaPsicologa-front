@@ -2,13 +2,13 @@
 
 export default function PortadaCelulares() {
   return (
-    <div className="block md:hidden min-h-screen bg-[#0a1628] flex items-center justify-center">
+    <div className="block md:hidden min-h-screen bg-[#1c2b45] flex items-center justify-center">
       <div className="text-center px-6">
         <h1 className="text-4xl font-bold text-white tracking-tight">
-          PORTADA
+          Catarsis
         </h1>
-        <p className="mt-5 text-base text-gray-300 max-w-md mx-auto leading-relaxed">
-          Salud integral a domicilio con atencion coordinada para pacientes y familias en la Region Metropolitana.
+        <p className="mt-3 text-base text-white/62 max-w-md mx-auto leading-relaxed">
+          Psicoterapia clínica online diseñada para el bienestar emocional de la mujer.
         </p>
       </div>
     </div>

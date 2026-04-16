@@ -41,21 +41,21 @@ export default function SeccionComuncacion() {
     )
 
     return (
-        <main className="bg-transparent text-[#fff4ee]">
+        <main className="bg-[#1c2b45] text-white">
             <section className="mx-auto w-full max-w-7xl px-6 pb-16 pt-24 md:px-10 md:pt-28">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#f1d8cb]/72">
-                    Comunidad SaludB
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#c8647a]">
+                    Comunidad Catarsis
                 </p>
-                <h1 className="mt-5 max-w-4xl text-4xl leading-tight text-[#fff1e9] sm:text-5xl">
-                    Contenidos y orientacion para el cuidado domiciliario integral.
+                <h1 className="mt-5 max-w-4xl text-4xl leading-tight text-white sm:text-5xl">
+                    Contenidos y orientación para el bienestar emocional de la mujer.
                 </h1>
-                <p className="mt-6 max-w-3xl text-sm leading-relaxed text-[#f5dfd4]/82 sm:text-base">
-                    Compartimos recomendaciones practicas para pacientes, familias y cuidadores en procesos de rehabilitacion y acompanamiento.
+                <p className="mt-6 max-w-3xl text-sm leading-relaxed text-white/62 sm:text-base">
+                    Compartimos recursos prácticos, reflexiones y herramientas para acompañar tu proceso de crecimiento personal y bienestar emocional.
                 </p>
             </section>
 
             <section className="mx-auto w-full max-w-7xl px-6 pb-20 md:px-10 md:pb-24">
-                <div className="rounded-[2rem] border border-[#f2d4c7]/14 bg-[linear-gradient(160deg,rgba(64,38,33,0.58)_0%,rgba(24,14,12,0.9)_100%)] p-4 sm:p-6">
+                <div className="border border-white/8 bg-[#1a2638] p-4 sm:p-6">
                     <CarruselOfertas
                         title=""
                         images={carrusel}
@@ -65,9 +65,9 @@ export default function SeccionComuncacion() {
                     <div className="-mt-8 flex justify-center pb-4 sm:pb-6">
                         <Link
                             href="/catalogo"
-                            className="rounded-full border border-[#bfeee3]/45 bg-[linear-gradient(135deg,#d8f6ef_0%,#34cdb4_100%)] px-8 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-[#0f5a52] transition hover:brightness-105"
+                            className="border border-[#c8647a] bg-[#c8647a] px-8 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#b55567] hover:border-[#b55567]"
                         >
-                            Ver soluciones
+                            Ver publicaciones
                         </Link>
                     </div>
                 </div>

@@ -177,6 +177,16 @@ html {
   color: #ffffff;
 }
 
+.theme-dark {
+  background: #1c2b45;
+  color: #ffffff;
+}
+
+.theme-dark ::selection {
+  background: #c8647a;
+  color: #1c2b45;
+}
+
 /* Ajuste global de escala tipografica en vistas publicas */
 .theme-white h1,
 .theme-white [class*="text-6xl"] {

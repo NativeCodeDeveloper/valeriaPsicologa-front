@@ -22,20 +22,26 @@ export default function Seccion2() {
   const fallbackServices = [
     {
       id: "srv-1",
-      name: "Kinesiologia a domicilio",
-      description: "Rehabilitacion funcional, manejo del dolor y mejora de movilidad con plan personalizado.",
+      name: "Psicoterapia Individual",
+      description: "Tratamiento de ansiedad, depresión y estrés crónico con herramientas cognitivo-conductuales.",
       image: "/logo_transparent.png",
     },
     {
       id: "srv-2",
-      name: "Terapia ocupacional",
-      description: "Intervencion para promover independencia en actividades diarias y adaptacion del entorno.",
+      name: "Acompañamiento en Duelo",
+      description: "Intervención especializada para transitar pérdidas de seres queridos, rupturas y cambios de vida.",
       image: "/logo_transparent.png",
     },
     {
       id: "srv-3",
-      name: "Medicina general y geriatria",
-      description: "Evaluacion, diagnostico y seguimiento clinico continuo en domicilio.",
+      name: "Terapia Sistémica y Relacional",
+      description: "Análisis de vínculos familiares y relacionales para promover relaciones más sanas y conscientes.",
+      image: "/logo_transparent.png",
+    },
+    {
+      id: "srv-4",
+      name: "Manejo del Estrés",
+      description: "Técnicas prácticas para el manejo de la sobrecarga emocional, límites y fortalecimiento de la autoestima.",
       image: "/logo_transparent.png",
     },
   ];
@@ -45,10 +51,10 @@ export default function Seccion2() {
       const mapTituloDetalle = (items) =>
         items.map((item, index) => ({
           id: `titulo-${item.id_publicacionesTituloDescripcion ?? index}`,
-          name: (item.publicacionesTitulo || "").trim() || `Publicacion ${index + 1}`,
+          name: (item.publicacionesTitulo || "").trim() || `Servicio ${index + 1}`,
           description:
             (item.publicacionesDescripcion || "").trim() ||
-            "Atencion personalizada con acompanamiento profesional y seguimiento continuo para resultados sostenibles.",
+            "Acompañamiento profesional y empático para tu proceso terapéutico.",
           image: item.publicacionesTituloDescripcionImagen
             ? `https://imagedelivery.net/aCBUhLfqUcxA2yhIBn1fNQ/${item.publicacionesTituloDescripcionImagen}/card`
             : "/logo_transparent.png",
@@ -57,9 +63,9 @@ export default function Seccion2() {
       const mapPublicaciones = (items) =>
         items.map((item, index) => ({
           id: `publicacion-${item.id_publicaciones ?? index}`,
-          name: (item.descripcionPublicaciones || "").trim() || `Publicacion ${index + 1}`,
+          name: (item.descripcionPublicaciones || "").trim() || `Servicio ${index + 1}`,
           description:
-            "Atencion personalizada con acompanamiento profesional y seguimiento continuo para resultados sostenibles.",
+            "Acompañamiento profesional y empático para tu proceso terapéutico.",
           image: item.imagenPublicaciones_primera
             ? `https://imagedelivery.net/aCBUhLfqUcxA2yhIBn1fNQ/${item.imagenPublicaciones_primera}/full`
             : "/logo_transparent.png",
@@ -91,7 +97,7 @@ export default function Seccion2() {
 
       if (!resPublicaciones.ok) {
         setInfoData([]);
-        return toast.error(`No ha sido posible cargar las imagenes del sistema contacte a soporte de NativeCode`);
+        return toast.error(`No ha sido posible cargar los servicios. Contacte a soporte de NativeCode.`);
       }
 
       const dataPublicaciones = await resPublicaciones.json();
@@ -101,7 +107,7 @@ export default function Seccion2() {
       setInfoData(mapPublicaciones(activePublicaciones));
     } catch {
       setInfoData([]);
-      return toast.error(`No ha sido posible cargar las imagenes del sistema contacte a soporte de NativeCode`);
+      return toast.error(`No ha sido posible cargar los servicios. Contacte a soporte de NativeCode.`);
     }
   }
 
@@ -139,37 +145,27 @@ export default function Seccion2() {
   }, [carouselApi, content.length]);
 
   return (
-    <section id="servicios" className="relative scroll-mt-24 bg-transparent py-22 text-[#0f5a52] sm:py-28">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: "url('/fondoblanco.png')",
-          backgroundSize: "contain",
-          backgroundPosition: "center top",
-          backgroundRepeat: "repeat",
-          opacity: 0.45,
-        }}
-      />
-
+    <section id="servicios" className="relative scroll-mt-24 bg-[#182038] py-24 text-white sm:py-32">
       <div className="relative mx-auto w-full max-w-7xl px-5 md:px-8 lg:px-10">
         <RevealOnScroll>
-          <div className="grid items-end gap-6 lg:grid-cols-[1fr_auto]">
+          <div className="mb-14 grid items-end gap-6 lg:grid-cols-[1fr_auto]">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-[#1f8f7d]/80">Servicios coordinados</p>
-              <h2 className="mt-4 max-w-4xl text-balance text-4xl font-semibold leading-[1.04] text-[#0f5a52] sm:text-5xl">
-                Atencion interdisciplinaria a domicilio para recuperar y mantener funcionalidad.
+              <p className="text-[11px] uppercase tracking-[0.28em] text-[#c8647a]">Servicios</p>
+              <h2 className="mt-4 max-w-3xl text-balance text-3xl font-bold text-white sm:text-4xl">
+                Acompañamos cada etapa de tu{" "}
+                <span className="text-[#c8647a]">proceso terapéutico.</span>
               </h2>
             </div>
             <Link
-              href="/servicios"
-              className="inline-flex justify-center rounded-full border border-[#34cdb4] bg-[#34cdb4] px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-[#2ab9a2]"
+              href="/reserva-hora"
+              className="inline-flex justify-center border border-[#c8647a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#c8647a] transition hover:bg-[#c8647a] hover:text-white"
             >
               Ver detalle completo
             </Link>
           </div>
         </RevealOnScroll>
 
-        <RevealOnScroll className="mt-12">
+        <RevealOnScroll className="mt-2">
           <div className="relative">
             <Carousel
               setApi={setCarouselApi}
@@ -177,7 +173,7 @@ export default function Seccion2() {
               className="w-full"
             >
               <CarouselContent className="-ml-4">
-                {content.map((service, index) => (
+                {content.map((service) => (
                   <CarouselItem
                     key={service.id ?? service.name}
                     className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
@@ -185,9 +181,9 @@ export default function Seccion2() {
                     <Link
                       href="/reserva-hora"
                       aria-label={`Agendar para ${service.name}`}
-                      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-[#bfeee3] bg-white shadow-[0_14px_34px_-24px_rgba(15,90,82,0.24)] transition duration-300 ease-out hover:-translate-y-1"
+                      className="group flex h-full flex-col overflow-hidden border border-white/8 bg-[#1a2638] transition duration-300 ease-out hover:border-[#c8647a]/40 hover:-translate-y-1"
                     >
-                      <div className="relative h-[340px] overflow-hidden bg-[#f2fffb] sm:h-[390px] lg:h-[430px]">
+                      <div className="relative h-72 overflow-hidden bg-[#1c2b45] sm:h-80 lg:h-96">
                         <img
                           src={imageErrors[service.id] ? "/logo_transparent.png" : service.image}
                           alt={service.name}
@@ -200,12 +196,12 @@ export default function Seccion2() {
                           }
                         />
                       </div>
-                      <div className="p-5">
-                        <h3 className="text-xl font-semibold tracking-[0.01em] text-[#0f5a52]">
+                      <div className="border-t border-white/8 p-5">
+                        <h3 className="text-lg font-semibold text-white">
                           {service.name}
                         </h3>
-                        <p className="mt-2 text-sm leading-7 tracking-[0.01em] text-[#2b7268]">
-                          {service.description || "Atencion personalizada con acompanamiento profesional y seguimiento continuo para resultados sostenibles."}
+                        <p className="mt-2 text-sm leading-relaxed text-white/58">
+                          {service.description || "Acompañamiento profesional y empático para tu proceso terapéutico."}
                         </p>
                       </div>
                     </Link>
@@ -213,21 +209,21 @@ export default function Seccion2() {
                 ))}
               </CarouselContent>
 
-              <CarouselPrevious className="left-2 top-1/2 z-20 -translate-y-1/2 border-[#bfeee3] bg-white text-[#1f8f7d] hover:bg-[#ecfbf7] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-35" />
-              <CarouselNext className="right-2 top-1/2 z-20 -translate-y-1/2 border-[#bfeee3] bg-white text-[#1f8f7d] hover:bg-[#ecfbf7] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-35" />
+              <CarouselPrevious className="left-2 top-1/2 z-20 -translate-y-1/2 border-white/20 bg-[#1c2b45] text-white/75 hover:bg-[#253367] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-35" />
+              <CarouselNext className="right-2 top-1/2 z-20 -translate-y-1/2 border-white/20 bg-[#1c2b45] text-white/75 hover:bg-[#253367] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-35" />
             </Carousel>
 
             {content.length > 1 && (
-              <div className="mt-5 flex items-center justify-center gap-2">
+              <div className="mt-6 flex items-center justify-center gap-2">
                 {content.map((item, index) => (
                   <button
                     key={item.id ?? item.name}
                     type="button"
-                    aria-label={`Ir a publicacion ${index + 1}`}
+                    aria-label={`Ir a servicio ${index + 1}`}
                     onClick={() => carouselApi?.scrollTo(index)}
                     className={[
                       "h-2 rounded-full transition-all duration-300",
-                      currentIndex === index ? "w-7 bg-[#34cdb4]" : "w-2 bg-[#8fdfcf] hover:bg-[#73d6c4]",
+                      currentIndex === index ? "w-7 bg-[#c8647a]" : "w-2 bg-white/25 hover:bg-white/45",
                     ].join(" ")}
                   />
                 ))}
@@ -235,16 +231,6 @@ export default function Seccion2() {
             )}
           </div>
         </RevealOnScroll>
-      </div>
-
-      <div className="hero-wave" aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <path
-            fill="#00cba9"
-            fillOpacity="1"
-            d="M0,320L24,314.7C48,309,96,299,144,293.3C192,288,240,288,288,293.3C336,299,384,309,432,277.3C480,245,528,171,576,154.7C624,139,672,181,720,202.7C768,224,816,224,864,218.7C912,213,960,203,1008,208C1056,213,1104,235,1152,218.7C1200,203,1248,149,1296,160C1344,171,1392,245,1416,282.7L1440,320L1440,320L1416,320C1392,320,1344,320,1296,320C1248,320,1200,320,1152,320C1104,320,1056,320,1008,320C960,320,912,320,864,320C816,320,768,320,720,320C672,320,624,320,576,320C528,320,480,320,432,320C384,320,336,320,288,320C240,320,192,320,144,320C96,320,48,320,24,320L0,320Z"
-          ></path>
-        </svg>
       </div>
     </section>
   );

@@ -46,12 +46,14 @@ export default function Seccion3() {
 
   const clinicalCases = listaPublicaciones.map((publicaciones, index) => ({
     id: publicaciones.id_publicaciones ?? `case-${index}`,
-    title: publicaciones.descripcionPublicaciones || `Publicacion ${index + 1}`,
+    title: publicaciones.descripcionPublicaciones || `Publicación ${index + 1}`,
     image: `https://imagedelivery.net/aCBUhLfqUcxA2yhIBn1fNQ/${publicaciones.imagenPublicaciones_primera}/full`,
   }));
-  const content = clinicalCases.length > 0
-    ? clinicalCases
-    : [{ id: "fallback-case", title: "Publicacion en proceso", image: FALLBACK_CASE_IMAGE }];
+
+  const content =
+    clinicalCases.length > 0
+      ? clinicalCases
+      : [{ id: "fallback-case", title: "Publicación en proceso", image: FALLBACK_CASE_IMAGE }];
 
   const scrollByAmount = (direction) => {
     const container = scrollerRef.current;
@@ -84,20 +86,22 @@ export default function Seccion3() {
 
   return (
     <>
-      <section id="casos-clinicos" className="scroll-mt-24 bg-transparent py-22 text-[#0f5a52] sm:py-28">
+      <section id="publicaciones" className="scroll-mt-24 bg-[#1e2d42] py-24 text-white sm:py-32">
         <div className="mx-auto w-full max-w-7xl px-5 md:px-8 lg:px-10">
           <RevealOnScroll>
             <div className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-end">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-[#1f8f7d]/78">Modelo SaludB</p>
-                <h2 className="mt-4 max-w-4xl text-balance text-4xl leading-[1] text-[#0f5a52] sm:text-5xl">
-                  Coordinamos cada caso para evitar atenciones fragmentadas.
+                <p className="text-[11px] uppercase tracking-[0.28em] text-[#c8647a]">Publicaciones</p>
+                <h2 className="mt-4 max-w-3xl text-balance text-3xl font-bold leading-tight text-white sm:text-4xl">
+                  Recursos y reflexiones para tu bienestar emocional.
                 </h2>
               </div>
-              <div className="rounded-3xl border border-[#00b89a] bg-[linear-gradient(180deg,#00cba9_0%,#00b89a_100%)] p-5 shadow-[0_16px_36px_-22px_rgba(0,122,103,0.34)]">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-white/86">Atencion en red</p>
-                <p className="mt-2 text-sm leading-7 text-white/94">
-                  Integramos profesionales, objetivos clinicos y comunicacion con la familia en una sola ruta de cuidado.
+              <div className="border border-[#c8647a]/25 bg-[#1a2638] p-5">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-[#c8647a]">
+                  Psicoterapia online
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-white/62">
+                  Atención exclusivamente online para mujeres de Santiago y todo Chile.
                 </p>
               </div>
             </div>
@@ -108,7 +112,7 @@ export default function Seccion3() {
               type="button"
               onClick={() => scrollByAmount("left")}
               aria-label="Desplazar resultados hacia la izquierda"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#00b89a] bg-[#00cba9] text-white transition duration-300 hover:bg-[#00b89a]"
+              className="inline-flex h-10 w-10 items-center justify-center border border-[#c8647a]/45 bg-transparent text-[#c8647a] transition hover:bg-[#c8647a]/10"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -116,21 +120,24 @@ export default function Seccion3() {
               type="button"
               onClick={() => scrollByAmount("right")}
               aria-label="Desplazar resultados hacia la derecha"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#00b89a] bg-[#00cba9] text-white transition duration-300 hover:bg-[#00b89a]"
+              className="inline-flex h-10 w-10 items-center justify-center border border-[#c8647a]/45 bg-transparent text-[#c8647a] transition hover:bg-[#c8647a]/10"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
-          <div ref={scrollerRef} className="hide-scrollbar mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2">
+          <div
+            ref={scrollerRef}
+            className="hide-scrollbar mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2"
+          >
             {content.map((item, index) => (
               <RevealOnScroll
                 key={item.id}
-                className="w-[74%] shrink-0 snap-start sm:w-[52%] lg:w-[32%]"
+                className="w-3/4 shrink-0 snap-start sm:w-1/2 lg:w-1/3"
                 delayClass={index === 0 ? "delay-100" : "delay-150"}
               >
-                <article className="flex h-full flex-col overflow-hidden rounded-3xl border border-[#bfeee3] bg-white shadow-[0_16px_36px_-22px_rgba(15,90,82,0.2)]">
-                  <div className="relative aspect-[2/3] overflow-hidden bg-[#f3fffc]">
+                <article className="flex h-full flex-col overflow-hidden border border-white/8 bg-[#1a2638] transition duration-300 hover:border-[#c8647a]/35">
+                  <div className="relative aspect-2/3 overflow-hidden bg-[#1c2b45]">
                     <img
                       src={imageErrors[item.image] ? FALLBACK_CASE_IMAGE : item.image}
                       alt={item.title}
@@ -144,8 +151,8 @@ export default function Seccion3() {
                       }
                     />
                   </div>
-                  <div className="flex justify-center p-6">
-                    <h3 className="text-center text-xl font-semibold leading-7 tracking-[0.01em] text-[#0f5a52]">
+                  <div className="flex justify-center p-5">
+                    <h3 className="text-center text-base font-semibold leading-snug text-white">
                       {item.title}
                     </h3>
                   </div>
@@ -156,32 +163,37 @@ export default function Seccion3() {
         </div>
       </section>
 
-      <section id="agenda" className="scroll-mt-24 bg-transparent py-20 text-white sm:py-24">
+      {/* Sección CTA Agenda */}
+      <section id="agenda" className="scroll-mt-24 bg-[#1a2638] py-20 text-white sm:py-24">
         <div className="mx-auto w-full max-w-7xl px-5 md:px-8 lg:px-10">
           <RevealOnScroll>
             <div
-              className="relative overflow-hidden rounded-[2rem] border border-white/28 px-6 py-14 text-center shadow-[0_18px_40px_-45px_rgba(7,62,55,0.45)] sm:px-10"
+              className="relative overflow-hidden border border-[#c8647a]/20 px-6 py-16 text-center"
               style={{
-                backgroundImage: "url('/fondoverde.png')",
+                backgroundImage: "url('/logocatarsis.png')",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat",
               }}
             >
+              <div className="absolute inset-0 bg-[#1c2b45]/80" />
               <div className="relative">
-                <p className="text-xs uppercase tracking-[0.24em] text-white/86">Agenda SaludB</p>
-                <h2 className="mx-auto mt-4 max-w-3xl text-balance text-4xl leading-[1] text-white sm:text-5xl">
-                  Agenda una primera evaluacion para coordinar tu plan domiciliario.
+                <p className="text-[11px] uppercase tracking-[0.28em] text-[#c8647a]">
+                  Catarsis · Psicoterapia online
+                </p>
+                <h2 className="mx-auto mt-4 max-w-2xl text-balance text-3xl font-bold text-white sm:text-4xl">
+                  Da el primer paso hacia tu bienestar emocional.
                 </h2>
-                <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 tracking-[0.02em] text-white/90 sm:text-base">
-                  Revisamos tu caso, definimos prioridades y te orientamos con un equipo interdisciplinario segun tus necesidades.
+                <p className="mx-auto mt-5 max-w-xl text-sm leading-relaxed text-white/68 sm:text-base">
+                  Agenda tu primera sesión y comencemos juntas a construir el camino hacia
+                  una vida más plena y consciente.
                 </p>
                 <Link
                   href="/agendaProfesionales"
                   aria-label="Reservar hora"
-                  className="mt-8 inline-flex w-full max-w-xs justify-center rounded-full border border-white/35 bg-white px-8 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#0f5a52] transition duration-300 ease-out hover:bg-white/90"
+                  className="mt-8 inline-flex w-full max-w-xs justify-center border border-[#c8647a] bg-[#c8647a] px-8 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition duration-300 hover:bg-[#b55567] hover:border-[#b55567]"
                 >
-                  Agendar primera evaluacion
+                  Agendar primera sesión
                 </Link>
               </div>
             </div>
