@@ -280,7 +280,7 @@ export default function FormularioReservaProfesional() {
                         {profesionalSeleccionado || "Cargando..."}
                     </h1>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-                        {descripcionProfesional}
+                        Psicóloga clínica, Agenda tu consulta de forma rápida y segura.
                     </p>
                     <div className="mx-auto mt-4 h-px w-20 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent"></div>
                 </header>

@@ -152,8 +152,8 @@ export default function Seccion2() {
             <div>
               <p className="text-[11px] uppercase tracking-[0.28em] text-[#c8647a]">Servicios</p>
               <h2 className="mt-4 max-w-3xl text-balance text-3xl font-bold text-white sm:text-4xl">
-                Acompañamos cada etapa de tu{" "}
-                <span className="text-[#c8647a]">proceso terapéutico.</span>
+                Un espacio terapéutico diseñado para darte {" "}
+                <span className="text-[#c8647a]">recursos tangibles y resultados medibles.</span>
               </h2>
             </div>
             <Link
@@ -179,7 +179,7 @@ export default function Seccion2() {
                     className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
                   >
                     <Link
-                      href="/reserva-hora"
+                      href="/agendaProfesionales"
                       aria-label={`Agendar para ${service.name}`}
                       className="group flex h-full flex-col overflow-hidden border border-white/8 bg-[#1a2638] transition duration-300 ease-out hover:border-[#c8647a]/40 hover:-translate-y-1"
                     >
