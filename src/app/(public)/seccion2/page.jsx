@@ -156,12 +156,6 @@ export default function Seccion2() {
                 <span className="text-[#c8647a]">recursos tangibles y resultados medibles.</span>
               </h2>
             </div>
-            <Link
-              href="/reserva-hora"
-              className="inline-flex justify-center border border-[#c8647a] px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#c8647a] transition hover:bg-[#c8647a] hover:text-white"
-            >
-              Ver detalle completo
-            </Link>
           </div>
         </RevealOnScroll>
 
