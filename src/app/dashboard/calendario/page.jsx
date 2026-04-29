@@ -31,6 +31,11 @@ function crearHoraLimite(hora, minuto = 0, segundo = 0) {
     return fecha;
 }
 
+function normalizarCorreoOpcional(valor) {
+    const correo = (valor ?? "").trim();
+    return correo || null;
+}
+
 export default function Calendario() {
     return (
         <Suspense fallback={<div className="min-h-screen grid place-items-center"><span className="text-sm text-slate-400">Cargando calendario...</span></div>}>
@@ -681,10 +686,11 @@ function CalendarioContent() {
 
     async function insertarNuevaReserva(nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion,id_profesional) {
         try {
-            if (!nombrePaciente || !apellidoPaciente || !rut || !telefono || !email || !fechaInicio || !horaInicio || !horaFinalizacion || !id_profesional) {
+            if (!nombrePaciente || !apellidoPaciente || !rut || !telefono || !fechaInicio || !horaInicio || !horaFinalizacion || !id_profesional) {
                 toast.error('Debe llenar todos los campos');
                 return false;
             }
+            const correoNormalizado = normalizarCorreoOpcional(email);
             const ahora = new Date();
             const inicio = new Date(`${fechaInicio}T${horaInicio}`);
             const final = new Date(`${fechaFinalizacion}T${horaFinalizacion}`);
@@ -710,7 +716,7 @@ function CalendarioContent() {
                     method: "POST",
                     headers: {Accept: "application/json", "Content-Type": "application/json"},
                     mode: "cors",
-                    body: JSON.stringify({nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva: "reservada" ,id_profesional})
+                    body: JSON.stringify({nombrePaciente, apellidoPaciente, rut, telefono, email: correoNormalizado, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva: "reservada" ,id_profesional})
                 });
                 const respuestaBackend = await res.json();
                 if (respuestaBackend.message === true) {
@@ -743,10 +749,10 @@ function CalendarioContent() {
             const apellido = (apellidoPaciente ?? "").trim();
             const rutLimpio = (rut ?? "").trim();
             const telefonoLimpio = (telefono ?? "").trim();
-            const correo = (email ?? "").trim();
+            const correo = normalizarCorreoOpcional(email);
 
-            if (!nombre || !apellido || !rutLimpio || !telefonoLimpio || !correo) {
-                return toast.error("Debe completar nombre, apellido, RUT, teléfono y correo para ingresar el paciente.");
+            if (!nombre || !apellido || !rutLimpio || !telefonoLimpio) {
+                return toast.error("Debe completar nombre, apellido, RUT y teléfono para ingresar el paciente.");
             }
 
             const rutNormalizado = normalizarRut(rutLimpio);
@@ -1132,15 +1138,16 @@ function CalendarioContent() {
 
     async function actualizarInformacionReserva(nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva, id_profesional, id_reserva) {
         try {
-            if (!nombrePaciente || !apellidoPaciente || !rut || !telefono || !email || !fechaInicio || !horaInicio || !fechaFinalizacion || !horaFinalizacion || !estadoReserva || !id_profesional || !id_reserva) {
+            if (!nombrePaciente || !apellidoPaciente || !rut || !telefono || !fechaInicio || !horaInicio || !fechaFinalizacion || !horaFinalizacion || !estadoReserva || !id_profesional || !id_reserva) {
                 toast.error("Debe llenar todos los campos para poder actualizar la reserva");
                 return false;
             }
+            const correoNormalizado = normalizarCorreoOpcional(email);
             const res = await fetch(`${API}/reservaPacientes/actualizarReservacion`, {
                 method: "POST",
                 headers: {Accept: "application/json", "Content-Type": "application/json"},
                 mode: "cors",
-                body: JSON.stringify({nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva, id_profesional, id_reserva})
+                body: JSON.stringify({nombrePaciente, apellidoPaciente, rut, telefono, email: correoNormalizado, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva, id_profesional, id_reserva})
             });
             if (!res.ok) {
                 toast.error("El servidor no responde");
@@ -1404,7 +1411,7 @@ function CalendarioContent() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700">Correo</label>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">Correo opcional</label>
                                     <ShadcnInput value={email ?? ""} onChange={(e) => setEmail(e.target.value)} className="h-11 rounded-xl border-slate-200 bg-white"/>
                                 </div>
                                 <div>
@@ -1817,13 +1824,13 @@ function CalendarioContent() {
                                         />
                                     </div>
                                     <div className="space-y-1 sm:col-span-2">
-                                        <label className="text-[11px] text-slate-500">Correo</label>
+                                        <label className="text-[11px] text-slate-500">Correo opcional</label>
                                         <input
                                             type="email"
                                             value={popupForm.email}
                                             onChange={(e) => setPopupForm((prev) => ({...prev, email: e.target.value}))}
                                             className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] text-slate-800 outline-none transition-all focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-                                            placeholder="correo@dominio.com"
+                                            placeholder="No indicado"
                                         />
                                     </div>
                                 </div>
