@@ -11,7 +11,6 @@ import parse from "date-fns/parse";
 import startOfWeek from "date-fns/startOfWeek";
 import getDay from "date-fns/getDay";
 import ShadcnInput from "@/Componentes/shadcnInput2";
-import ShadcnFechaHora from "@/Componentes/ShadcnFechaHora";
 import ToasterClient from "@/Componentes/ToasterClient";
 import {toast} from "react-hot-toast";
 
@@ -23,6 +22,14 @@ const locales = {es: es};
 const dfStartOfWeek = (date) => startOfWeek(date, {locale: es});
 const localizer = dateFnsLocalizer({format, parse, startOfWeek: dfStartOfWeek, getDay, locales});
 const DnDCalendar = withDragAndDrop(Calendar);
+const HORA_MINIMA_AGENDA = 9;
+const HORA_MAXIMA_AGENDA = 20;
+
+function crearHoraLimite(hora, minuto = 0, segundo = 0) {
+    const fecha = new Date();
+    fecha.setHours(hora, minuto, segundo, 0);
+    return fecha;
+}
 
 export default function Calendario() {
     return (
@@ -79,6 +86,11 @@ function CalendarioContent() {
                 letter-spacing: 0.08em !important;
                 background: rgba(248, 250, 252, 0.85) !important;
             }
+            .rbc-time-view .rbc-header,
+            .rbc-time-view .rbc-time-gutter .rbc-label,
+            .rbc-time-view .rbc-time-slot {
+                font-size: 14.4px !important;
+            }
             .rbc-time-header-content,
             .rbc-time-content,
             .rbc-time-view,
@@ -88,6 +100,14 @@ function CalendarioContent() {
             .rbc-header + .rbc-header,
             .rbc-time-header-content + .rbc-time-header-content {
                 border-color: #e2e8f0 !important;
+            }
+            .rbc-time-content {
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-y !important;
+                overscroll-behavior: contain !important;
+            }
+            .rbc-time-view .rbc-timeslot-group {
+                min-height: 44px !important;
             }
             .rbc-time-slot {
                 transition: background-color 120ms ease !important;
@@ -113,9 +133,14 @@ function CalendarioContent() {
             }
             .rbc-event,
             .rbc-background-event {
-                border-radius: 16px !important;
-                border: 0 !important;
+                border-radius: 0 !important;
                 box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08) !important;
+            }
+            .rbc-background-event {
+                background-color: rgba(107, 114, 128, 0.28) !important;
+                border: 1px solid rgba(107, 114, 128, 0.38) !important;
+                border-left: 4px solid rgba(71, 85, 105, 0.95) !important;
+                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
             }
             .rbc-addons-dnd-resizable {
                 border-radius: 16px !important;
@@ -125,16 +150,41 @@ function CalendarioContent() {
                 height: 6px !important;
             }
             .rbc-month-view .rbc-event {
-                min-height: 28px !important; height: auto !important; padding: 6px 8px !important;
-                line-height: 1.3 !important; white-space: normal !important; overflow: visible !important; word-break: break-word !important;
+                min-height: 0 !important; height: auto !important; padding: 2px 3px !important;
+                line-height: 1.1 !important; white-space: normal !important; overflow: visible !important; word-break: break-word !important;
+                font-size: 55% !important;
             }
             .rbc-time-view .rbc-event {
-                min-height: 30px !important; height: auto !important; padding: 6px 8px !important;
-                line-height: 1.3 !important; white-space: normal !important; overflow: visible !important; word-break: break-word !important;
+                min-height: 0 !important; padding: 1px 2px !important;
+                line-height: 1.1 !important; white-space: normal !important; overflow: hidden !important; word-break: break-word !important;
+                font-size: 48% !important;
             }
             .rbc-month-view .rbc-day-slot { min-height: 80px !important; }
             .rbc-row-segment { z-index: 1 !important; }
-            .rbc-event-label, .rbc-event-content { white-space: normal !important; overflow: visible !important; word-break: break-word !important; }
+            .rbc-event-label, .rbc-event-content { white-space: normal !important; overflow: visible !important; word-break: break-word !important; font-size: 40% !important; }
+            .rbc-time-view .rbc-event-label,
+            .rbc-time-view .rbc-event-content { font-size: 48% !important; }
+            .rbc-event-label { display: none !important; }
+            @media (min-width: 768px) {
+                .rbc-month-view .rbc-event-label,
+                .rbc-month-view .rbc-event-content {
+                    font-size: 55% !important;
+                }
+            }
+            @media (max-width: 767px) {
+                .rbc-time-view,
+                .rbc-time-content,
+                .rbc-day-slot,
+                .rbc-time-column {
+                    touch-action: pan-y !important;
+                }
+                .rbc-toolbar {
+                    flex-wrap: wrap !important;
+                }
+                .rbc-toolbar button {
+                    min-height: 38px !important;
+                }
+            }
         `;
         document.head.appendChild(style);
         return () => { document.head.removeChild(style); };
@@ -143,6 +193,7 @@ function CalendarioContent() {
     const [events, setEvents] = useState([]);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [currentView, setCurrentView] = useState("week");
+    const [esMobile, setEsMobile] = useState(false);
 
     const searchParams = useSearchParams();
 
@@ -175,6 +226,7 @@ function CalendarioContent() {
     const [dataBloqueos, setDataBloqueos] = useState([]);
     const [listaProfesionales, setListaProfesionales] = useState([]);
     const [id_profesional, setId_profesional] = useState("");
+    const [backgroundCalendarEvents, setBackgroundCalendarEvents] = useState([]);
     const [selectionPreview, setSelectionPreview] = useState(null);
     const [selectionDraft, setSelectionDraft] = useState(null);
     const [floatingDraft, setFloatingDraft] = useState(null);
@@ -186,7 +238,25 @@ function CalendarioContent() {
         rut: "",
         telefono: "",
         email: "",
+        motivoBloqueo: "",
     });
+
+    useEffect(() => {
+        function actualizarModoMobile() {
+            const mobile = window.innerWidth < 768;
+            setEsMobile(mobile);
+            setCurrentView((prev) => {
+                if (mobile && (prev === "month" || prev === "agenda")) {
+                    return "week";
+                }
+                return prev;
+            });
+        }
+
+        actualizarModoMobile();
+        window.addEventListener("resize", actualizarModoMobile);
+        return () => window.removeEventListener("resize", actualizarModoMobile);
+    }, []);
 
     async function seleccionarTodosProfesionalesCalendario() {
         try {
@@ -230,32 +300,37 @@ function CalendarioContent() {
         return `${y}-${m}-${day}`;
     }
 
-    const manejarFechaHoraInicio = (dateTime) => {
-        setfechaInicio(formatearFechaLocal(dateTime));
-        setHoraInicio(dateTime.toTimeString().slice(0, 8));
-    };
-
-    const manejarFechaHoraFinalizacion = (dateTime) => {
-        setfechaFinalizacion(formatearFechaLocal(dateTime));
-        setHoraFinalizacion(dateTime.toTimeString().slice(0, 8));
-    };
-
     function convertirAFechaCalendario(fechaISO, hora) {
         const soloFecha = fechaISO.slice(0, 10);
         return new Date(`${soloFecha}T${hora}`);
     }
 
-    function isOverlapping(start, end, ignoredReservaId = null) {
-        // Verificar contra reservas existentes
+    function estaDentroHorarioAgenda(start, end) {
+        if (!(start instanceof Date) || Number.isNaN(start.getTime())) return false;
+        if (!(end instanceof Date) || Number.isNaN(end.getTime())) return false;
+
+        const minutosInicio = start.getHours() * 60 + start.getMinutes();
+        const minutosFin = end.getHours() * 60 + end.getMinutes();
+        const minimo = HORA_MINIMA_AGENDA * 60;
+        const maximo = HORA_MAXIMA_AGENDA * 60;
+
+        return minutosInicio >= minimo && minutosFin <= maximo && end > start;
+    }
+
+    function normalizarRut(valor = "") {
+        return String(valor).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    }
+
+    function obtenerTipoSolapamiento(start, end, ignoredReservaId = null) {
         if (dataAgenda && dataAgenda.length > 0) {
             for (const cita of dataAgenda) {
                 if (ignoredReservaId && cita.id_reserva === ignoredReservaId) continue;
                 const evStart = convertirAFechaCalendario((cita.fechaInicio ?? "").slice(0, 10), (cita.horaInicio ?? "00:00:00"));
                 const evEnd = convertirAFechaCalendario((cita.fechaFinalizacion ?? "").slice(0, 10), (cita.horaFinalizacion ?? "00:00:00"));
-                if (start < evEnd && end > evStart) return true;
+                if (start < evEnd && end > evStart) return "reserva";
             }
         }
-        // Verificar contra bloqueos existentes (expandidos por día)
+
         if (dataBloqueos && dataBloqueos.length > 0) {
             for (const bloqueo of dataBloqueos) {
                 const horaIni = bloqueo.horaInicio ?? "00:00:00";
@@ -274,12 +349,17 @@ function CalendarioContent() {
                     const fechaDia = `${y}-${m}-${d}`;
                     const bStart = new Date(`${fechaDia}T${horaIni}`);
                     const bEnd = new Date(`${fechaDia}T${horaFin}`);
-                    if (start < bEnd && end > bStart) return true;
+                    if (start < bEnd && end > bStart) return "bloqueo";
                     cursor = new Date(y, cursor.getMonth(), cursor.getDate() + 1, 0, 0, 0);
                 }
             }
         }
-        return false;
+
+        return null;
+    }
+
+    function isOverlapping(start, end, ignoredReservaId = null) {
+        return obtenerTipoSolapamiento(start, end, ignoredReservaId) !== null;
     }
 
     function formatHoraCorta(date) {
@@ -288,6 +368,30 @@ function CalendarioContent() {
 
     function formatFechaLarga(date) {
         return format(date, "EEEE d 'de' MMMM", {locale: es});
+    }
+
+    function obtenerTituloReserva(cita) {
+        const nombre = (cita?.nombrePaciente ?? "").trim();
+        const apellido = (cita?.apellidoPaciente ?? "").trim();
+        const inicialApellido = apellido ? `${apellido.charAt(0).toUpperCase()}.` : "";
+        return [nombre, inicialApellido].filter(Boolean).join(" ");
+    }
+
+    function obtenerTooltipEvento(event) {
+        if (event?.tipo === "bloqueo") {
+            return event.title || "Bloqueo";
+        }
+
+        if (event?.tipo === "reserva") {
+            const nombre = (event.resource?.nombrePaciente ?? "").trim();
+            const apellido = (event.resource?.apellidoPaciente ?? "").trim();
+            const horario = event.start && event.end
+                ? `${formatHoraCorta(event.start)} - ${formatHoraCorta(event.end)}`
+                : "";
+            return [nombre, apellido, horario].filter(Boolean).join(" | ");
+        }
+
+        return event?.title || "";
     }
 
     function obtenerNombreProfesionalSeleccionado() {
@@ -304,6 +408,7 @@ function CalendarioContent() {
             rut: "",
             telefono: "",
             email: "",
+            motivoBloqueo: "",
         });
     }
 
@@ -329,6 +434,7 @@ function CalendarioContent() {
             rut,
             telefono,
             email,
+            motivoBloqueo: "",
         });
         setFloatingDraft({
             id: "draft-selection",
@@ -348,6 +454,80 @@ function CalendarioContent() {
         });
     }
 
+    function actualizarBorradorSeleccion(start, end) {
+        const nextDraft = {
+            start,
+            end,
+            profesional: obtenerNombreProfesionalSeleccionado(),
+        };
+
+        setSelectionDraft(nextDraft);
+        setFloatingDraft({
+            id: "draft-selection",
+            title: "Nuevo agendamiento",
+            start,
+            end,
+            tipo: "seleccion",
+        });
+        setfechaInicio(formatearFechaLocal(start));
+        setHoraInicio(start.toTimeString().slice(0, 8));
+        setfechaFinalizacion(formatearFechaLocal(end));
+        setHoraFinalizacion(end.toTimeString().slice(0, 8));
+    }
+
+    function actualizarHoraSeleccionDraft(campo, valorHora) {
+        if (!selectionDraft || !valorHora) return;
+
+        const [horas, minutos] = valorHora.split(":").map(Number);
+        if (Number.isNaN(horas) || Number.isNaN(minutos)) return;
+
+        const nuevoInicio = new Date(selectionDraft.start);
+        const nuevoFin = new Date(selectionDraft.end);
+
+        if (campo === "start") {
+            nuevoInicio.setHours(horas, minutos, 0, 0);
+        } else {
+            nuevoFin.setHours(horas, minutos, 0, 0);
+        }
+
+        if (!estaDentroHorarioAgenda(nuevoInicio, nuevoFin)) {
+            toast.error("Solo puedes agendar entre 09:00 y 20:00 horas, con un rango valido.");
+            return;
+        }
+
+        if (isOverlapping(nuevoInicio, nuevoFin)) {
+            toast.error("La hora ajustada se superpone con otra reserva o bloqueo.");
+            return;
+        }
+
+        actualizarBorradorSeleccion(nuevoInicio, nuevoFin);
+    }
+
+    function actualizarFechaSeleccionDraft(valorFecha) {
+        if (!selectionDraft || !valorFecha) return;
+
+        const [year, month, day] = valorFecha.split("-").map(Number);
+        if ([year, month, day].some(Number.isNaN)) return;
+
+        const nuevoInicio = new Date(selectionDraft.start);
+        const nuevoFin = new Date(selectionDraft.end);
+
+        nuevoInicio.setFullYear(year, month - 1, day);
+        nuevoFin.setFullYear(year, month - 1, day);
+
+        if (!estaDentroHorarioAgenda(nuevoInicio, nuevoFin)) {
+            toast.error("Solo puedes agendar entre 09:00 y 20:00 horas, con un rango valido.");
+            return;
+        }
+
+        if (isOverlapping(nuevoInicio, nuevoFin)) {
+            toast.error("La fecha ajustada se superpone con otra reserva o bloqueo.");
+            return;
+        }
+
+        actualizarBorradorSeleccion(nuevoInicio, nuevoFin);
+    }
+
     function validarSeleccionPrevia(start, end, ignoredReservaId = null) {
         if (!id_profesional) {
             if (!selectionGuardRef.current.missingProfessional) {
@@ -361,10 +541,17 @@ function CalendarioContent() {
             return false;
         }
 
-        if (isOverlapping(start, end, ignoredReservaId)) {
+        if (!estaDentroHorarioAgenda(start, end)) {
+            toast.error("Solo puedes agendar entre 09:00 y 20:00 horas.");
+            setSelectionPreview(null);
+            return false;
+        }
+
+        const tipoSolapamiento = obtenerTipoSolapamiento(start, end, ignoredReservaId);
+        if (tipoSolapamiento === "reserva") {
             if (!selectionGuardRef.current.overlap) {
                 selectionGuardRef.current.overlap = true;
-                toast.error("Horario no disponible. El rango se superpone con otra reserva o bloqueo.");
+                toast.error("Horario no disponible. El rango se superpone con otra reserva.");
                 setTimeout(() => {
                     selectionGuardRef.current.overlap = false;
                 }, 1200);
@@ -411,7 +598,7 @@ function CalendarioContent() {
             const res = await fetch(`${API}/bloqueoAgenda/seleccionarBloqueosPorProfesional`, {
                 method: "POST",
                 headers: {Accept: "application/json",
-                "Content-Type": "application/json"},
+                    "Content-Type": "application/json"},
                 mode: "cors",
                 body: JSON.stringify({id_profesional})
             });
@@ -446,29 +633,51 @@ function CalendarioContent() {
     useEffect(() => {
         if (!draggingPopup) return;
 
+        function actualizarPosicion(clientX, clientY) {
+            const popupWidth = popupRef.current?.offsetWidth ?? 420;
+            const popupHeight = popupRef.current?.offsetHeight ?? 520;
+            const nextX = clientX - popupDragStateRef.current.offsetX;
+            const nextY = clientY - popupDragStateRef.current.offsetY;
+
+            setPopupPosition({
+                x: Math.max(8, Math.min(nextX, window.innerWidth - popupWidth - 8)),
+                y: Math.max(8, Math.min(nextY, window.innerHeight - popupHeight - 8)),
+            });
+        }
+
         function handleMove(event) {
             if (!popupDragStateRef.current.dragging) return;
-            setPopupPosition({
-                x: Math.max(16, event.clientX - popupDragStateRef.current.offsetX),
-                y: Math.max(16, event.clientY - popupDragStateRef.current.offsetY),
-            });
+            actualizarPosicion(event.clientX, event.clientY);
+        }
+
+        function handleTouchMove(event) {
+            if (!popupDragStateRef.current.dragging) return;
+            const touch = event.touches?.[0];
+            if (!touch) return;
+            event.preventDefault();
+            actualizarPosicion(touch.clientX, touch.clientY);
         }
 
         function handleUp() {
             popupDragStateRef.current.dragging = false;
             setDraggingPopup(false);
             document.body.style.userSelect = "";
+            document.body.style.touchAction = "";
         }
 
         window.addEventListener("mousemove", handleMove);
         window.addEventListener("mouseup", handleUp);
+        window.addEventListener("touchmove", handleTouchMove, {passive: false});
+        window.addEventListener("touchend", handleUp);
 
         return () => {
             window.removeEventListener("mousemove", handleMove);
             window.removeEventListener("mouseup", handleUp);
+            window.removeEventListener("touchmove", handleTouchMove);
+            window.removeEventListener("touchend", handleUp);
         };
     }, [draggingPopup]);
-    
+
 
     async function insertarNuevaReserva(nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion,id_profesional) {
         try {
@@ -481,6 +690,10 @@ function CalendarioContent() {
             const final = new Date(`${fechaFinalizacion}T${horaFinalizacion}`);
             if (inicio < ahora) {
                 toast.error("No es posible agendar en fechas NO vigentes");
+                return false;
+            }
+            if (!estaDentroHorarioAgenda(inicio, final)) {
+                toast.error("Solo puedes agendar entre 09:00 y 20:00 horas.");
                 return false;
             }
             if (final < inicio) {
@@ -524,6 +737,82 @@ function CalendarioContent() {
         return false;
     }
 
+    async function ingresarPacienteDesdeAgenda() {
+        try {
+            const nombre = (nombrePaciente ?? "").trim();
+            const apellido = (apellidoPaciente ?? "").trim();
+            const rutLimpio = (rut ?? "").trim();
+            const telefonoLimpio = (telefono ?? "").trim();
+            const correo = (email ?? "").trim();
+
+            if (!nombre || !apellido || !rutLimpio || !telefonoLimpio || !correo) {
+                return toast.error("Debe completar nombre, apellido, RUT, teléfono y correo para ingresar el paciente.");
+            }
+
+            const rutNormalizado = normalizarRut(rutLimpio);
+            const resBusqueda = await fetch(`${API}/pacientes/contieneRut`, {
+                method: "POST",
+                headers: {Accept: "application/json", "Content-Type": "application/json"},
+                mode: "cors",
+                body: JSON.stringify({rut: rutNormalizado})
+            });
+
+            if (resBusqueda.ok) {
+                const coincidencias = await resBusqueda.json();
+                const yaExiste = Array.isArray(coincidencias) && coincidencias.some((paciente) => normalizarRut(paciente.rut) === rutNormalizado);
+                if (yaExiste) {
+                    return toast.error("Ese paciente ya existe en la lista de pacientes regulares.");
+                }
+            }
+
+            const resInsercion = await fetch(`${API}/pacientes/pacientesInsercion`, {
+                method: "POST",
+                headers: {Accept: "application/json", "Content-Type": "application/json"},
+                mode: "cors",
+                body: JSON.stringify({
+                    nombre,
+                    apellido,
+                    rut: rutLimpio,
+                    nacimiento: "1900-01-01",
+                    sexo: "No especifica",
+                    prevision_id: 1,
+                    telefono: telefonoLimpio,
+                    correo,
+                    direccion: "Por completar",
+                    pais: "Chile",
+                    observacion1: "Creado desde agenda",
+                    observacion2: "NO ESPECIFICADO",
+                    observacion3: "NO ESPECIFICADO",
+                    apoderado: "NO ESPECIFICADO",
+                    apoderado_rut: "NO ESPECIFICADO",
+                    medicamentosUsados: "NO ESPECIFICADO",
+                    habitos: "NO ESPECIFICADO",
+                    comentariosAdicionales: "Paciente ingresado manualmente desde agenda",
+                })
+            });
+
+            if (!resInsercion.ok) {
+                const detalle = await resInsercion.json().catch(() => null);
+                console.log("Error al ingresar paciente desde agenda:", detalle);
+                return toast.error("No se pudo ingresar el paciente desde la agenda.");
+            }
+
+            const respuestaBackend = await resInsercion.json();
+
+
+            if (respuestaBackend.message === "duplicado") {
+                return toast.success("El paciente ya se encuentra ingresado en el sistema.");
+            }else if (respuestaBackend.message === true) {
+                return toast.success("Paciente ingresado correctamente. Quedó creado con datos base para completar después.");
+            }else{
+                return toast.error("No se pudo ingresar el paciente desde la agenda.");
+            }
+        } catch (error) {
+            console.log(error);
+            return toast.error("Ocurrió un problema al ingresar el paciente desde la agenda.");
+        }
+    }
+
     async function actualizarReservaDesdeCalendario(reservaOriginal, start, end) {
         if (!reservaOriginal?.id_reserva) return toast.error("No fue posible identificar la reserva a mover.");
         if (!validarSeleccionPrevia(start, end, reservaOriginal.id_reserva)) return;
@@ -544,9 +833,63 @@ function CalendarioContent() {
         );
     }
 
+    async function insertarBloqueoHorario(idProf, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, motivo) {
+        try {
+            if (!idProf) {
+                return toast.error("Debe seleccionar un profesional para bloquear un horario.");
+            }
+
+            if (!fechaInicio || !horaInicio || !fechaFinalizacion || !horaFinalizacion || !motivo.trim()) {
+                return toast.error("Debe indicar el rango y el motivo del bloqueo.");
+            }
+
+            const inicio = new Date(`${fechaInicio}T${horaInicio}`);
+            const final = new Date(`${fechaFinalizacion}T${horaFinalizacion}`);
+            if (!estaDentroHorarioAgenda(inicio, final)) {
+                return toast.error("Solo puedes bloquear horarios entre 09:00 y 20:00 horas.");
+            }
+
+            const res = await fetch(`${API}/bloqueoAgenda/InsertarBloqueo`, {
+                method: "POST",
+                headers: {Accept: "application/json", "Content-Type": "application/json"},
+                mode: "cors",
+                body: JSON.stringify({
+                    id_profesional: idProf,
+                    fechaInicio,
+                    horaInicio,
+                    fechaFinalizacion,
+                    horaFinalizacion,
+                    motivo: motivo.trim(),
+                })
+            });
+
+            if (!res.ok) {
+                return toast.error("No se ha podido insertar el bloqueo. Intente más tarde.");
+            }
+
+            const respuestaBackend = await res.json();
+            if (respuestaBackend.message === true) {
+                await refrescarCalendario();
+                limpiarSeleccionTemporal();
+                return toast.success("Se bloqueó el horario correctamente.");
+            }
+
+            if (respuestaBackend.message === "sindisponibilidad") {
+                return toast.error("Ese horario ya tiene un bloqueo que se cruza con el rango seleccionado.");
+            }
+
+            return toast.error("No se ha podido insertar el bloqueo.");
+        } catch (error) {
+            console.log(error);
+            return toast.error("No se ha podido registrar el bloqueo.");
+        }
+    }
+
     const messages = useMemo(() => ({
         next: "Siguiente", previous: "Anterior", today: "Hoy", month: "Mes", week: "Semana", day: "Día", agenda: "Agenda", noEventsInRange: "No hay eventos",
     }), []);
+
+    const vistasDisponibles = esMobile ? ["week", "day"] : ["month", "week", "day", "agenda"];
 
     // Expande bloqueos multi-día en segmentos por día para que
     // react-big-calendar los muestre en la grilla horaria (no en all-day).
@@ -573,7 +916,7 @@ function CalendarioContent() {
 
                 resultado.push({
                     id_bloqueo: bloqueo.id_bloqueo,
-                    title: "BLOQUEADO" + (bloqueo.motivo ? " - " + bloqueo.motivo : ""),
+                    title: bloqueo.motivo || "Sin motivo",
                     start: new Date(`${fechaDia}T${horaIni}`),
                     end: new Date(`${fechaDia}T${horaFin}`),
                     allDay: false,
@@ -590,43 +933,183 @@ function CalendarioContent() {
     useEffect(() => {
         const eventosReservas = (dataAgenda || []).map((cita) => ({
             id_reserva: cita.id_reserva,
-            title: cita.nombrePaciente + " " + cita.apellidoPaciente,
+            title: obtenerTituloReserva(cita),
             start: convertirAFechaCalendario(cita.fechaInicio, cita.horaInicio),
             end: convertirAFechaCalendario(cita.fechaFinalizacion, cita.horaFinalizacion),
             allDay: false,
             tipo: "reserva",
             resource: cita,
         }));
-        const eventosBloqueos = expandirBloqueosPorDia(dataBloqueos || []);
-        setEvents([...eventosReservas, ...eventosBloqueos]);
-    }, [dataAgenda, dataBloqueos]);
+        const eventosBloqueos = expandirBloqueosPorDia(dataBloqueos || []).map((bloqueo) => ({
+            ...bloqueo,
+            allDay: false,
+        }));
+
+        if (currentView === "month") {
+            setEvents([...eventosReservas, ...eventosBloqueos]);
+            setBackgroundCalendarEvents([]);
+            return;
+        }
+
+        setEvents(eventosReservas);
+        setBackgroundCalendarEvents(eventosBloqueos);
+    }, [dataAgenda, dataBloqueos, currentView]);
+
+    function obtenerPaletaEstadoReserva(estadoReserva = "") {
+        const estadoNormalizado = estadoReserva
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+
+        if (estadoNormalizado === "asiste") {
+            return {
+                backgroundColor: "rgba(34, 211, 238, 0.20)",
+                color: "#0f766e",
+                accentColor: "#0891b2",
+                borderColor: "rgba(6, 182, 212, 0.30)"
+            };
+        }
+
+        if (estadoNormalizado === "no asiste" || estadoNormalizado === "no asistio" || estadoNormalizado === "no asistste") {
+            return {
+                backgroundColor: "rgba(244, 114, 182, 0.18)",
+                color: "#9d174d",
+                accentColor: "#db2777",
+                borderColor: "rgba(236, 72, 153, 0.28)"
+            };
+        }
+
+        if (estadoNormalizado === "finalizado") {
+            return {
+                backgroundColor: "rgba(251, 146, 60, 0.18)",
+                color: "#9a3412",
+                accentColor: "#ea580c",
+                borderColor: "rgba(249, 115, 22, 0.28)"
+            };
+        }
+
+        if (estadoNormalizado === "confirmada") {
+            return {
+                backgroundColor: "rgba(34, 197, 94, 0.22)",
+                color: "#14532d",
+                accentColor: "#166534",
+                borderColor: "rgba(34, 197, 94, 0.30)"
+            };
+        }
+
+        if (estadoNormalizado === "anulada") {
+            return {
+                backgroundColor: "rgba(244, 63, 94, 0.18)",
+                color: "#881337",
+                accentColor: "#881337",
+                borderColor: "rgba(225, 29, 72, 0.28)"
+            };
+        }
+
+        return {
+            backgroundColor: "rgba(124, 58, 237, 0.20)",
+            color: "#5b21b6",
+            accentColor: "#5b21b6",
+            borderColor: "rgba(124, 58, 237, 0.28)"
+        };
+    }
 
     const eventStyleGetter = (event) => {
         const esBloqueo = event.tipo === "bloqueo";
         const esSeleccion = event.tipo === "seleccion";
-        const estadoReservaNormalizado = event.resource?.estadoReserva?.toLowerCase?.() ?? "";
-        const paletteReserva = estadoReservaNormalizado === "confirmada"
-            ? {backgroundColor: "#16a34a", color: "#ffffff"}
-            : estadoReservaNormalizado === "anulada"
-                ? {backgroundColor: "#9f1239", color: "#ffffff"}
-                : {backgroundColor: "#7c3aed", color: "#ffffff"};
+        const esVistaMes = currentView === "month";
+        const paletteReserva = obtenerPaletaEstadoReserva(event.resource?.estadoReserva);
+
+        if (esBloqueo) {
+            return {
+                style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: esVistaMes ? 'auto' : '100%',
+                    minHeight: esVistaMes ? '20px' : '0',
+                    maxHeight: 'none',
+                    whiteSpace: 'normal',
+                    overflow: 'hidden',
+                    textOverflow: 'clip',
+                    lineHeight: esVistaMes ? '1' : '1.3',
+                    padding: esVistaMes ? '2px 4px' : '6px 8px',
+                    fontSize: esVistaMes ? '0.9rem' : '0.8rem',
+                    boxSizing: 'border-box',
+                    borderRadius: '0px',
+                    backgroundColor: 'rgba(107, 114, 128, 0.28)',
+                    color: '#334155',
+                    fontWeight: '600',
+                    wordBreak: 'break-word',
+                    border: '1px solid rgba(107, 114, 128, 0.38)',
+                    borderLeft: '4px solid rgba(71, 85, 105, 0.95)',
+                    boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18)',
+                },
+            };
+        }
 
         return {
             style: {
-                display: 'flex', alignItems: 'center', height: 'auto', minHeight: '28px', maxHeight: 'none',
-                whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', lineHeight: '1.3',
-                padding: '6px 8px', fontSize: '0.8rem', boxSizing: 'border-box', borderRadius: '16px',
-                backgroundColor: esSeleccion ? 'rgba(124, 58, 237, 0.24)' : esBloqueo ? '#dc2626' : paletteReserva.backgroundColor,
-                color: esSeleccion ? '#5b21b6' : esBloqueo ? '#fff' : paletteReserva.color,
+                display: 'flex',
+                alignItems: 'stretch',
+                height: esVistaMes ? 'auto' : '100%',
+                minHeight: esVistaMes ? '20px' : '0',
+                maxHeight: 'none',
+                whiteSpace: 'normal',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                lineHeight: '1',
+                padding: esVistaMes ? '2px 4px' : '0',
+                fontSize: esVistaMes ? '0.95rem' : '0.85rem',
+                boxSizing: 'border-box',
+                borderRadius: '0px',
+                backgroundColor: esSeleccion ? 'rgba(124, 58, 237, 0.24)' : paletteReserva.backgroundColor,
+                color: esSeleccion ? '#5b21b6' : paletteReserva.color,
                 fontWeight: '600', wordBreak: 'break-word',
-                border: esSeleccion ? '1px solid rgba(124, 58, 237, 0.45)' : 'none',
-                boxShadow: esSeleccion ? 'none' : '0 12px 24px rgba(15, 23, 42, 0.12)',
+                border: esSeleccion ? '1px solid rgba(124, 58, 237, 0.45)' : `1px solid ${paletteReserva.borderColor}`,
+                borderLeft: esSeleccion ? '4px solid rgba(91, 33, 182, 0.95)' : `4px solid ${paletteReserva.accentColor}`,
+                boxShadow: esSeleccion ? 'inset 0 0 0 1px rgba(255,255,255,0.16)' : 'inset 0 0 0 1px rgba(255,255,255,0.14)',
             },
         };
     };
 
+    const backgroundEventStyleGetter = (event) => {
+        const esBloqueo = event.tipo === "bloqueo";
+        const esSeleccion = event.tipo === "seleccion";
+
+        if (esBloqueo) {
+            return {
+                className: "bloqueo-calendario-bg",
+                style: {
+                    backgroundColor: "rgba(107, 114, 128, 0.28)",
+                    border: "1px solid rgba(107, 114, 128, 0.38)",
+                    borderLeft: "4px solid rgba(71, 85, 105, 0.95)",
+                    borderRadius: "0px",
+                    boxShadow: "inset 0 0 0 1px rgba(255, 255, 255, 0.18)",
+                },
+            };
+        }
+
+        if (esSeleccion) {
+            return {
+                style: {
+                    backgroundColor: "rgba(124, 58, 237, 0.22)",
+                    border: "1px solid rgba(124, 58, 237, 0.42)",
+                    borderLeft: "4px solid rgba(91, 33, 182, 0.95)",
+                    borderRadius: "0px",
+                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.2)",
+                },
+            };
+        }
+
+        return {style: {}};
+    };
+
     const EventComponent = ({event}) => (
-        <div title={event.title} className="break-words text-[13px] leading-snug w-full flex items-center gap-1" style={{whiteSpace: 'normal', overflow: 'visible', wordBreak: 'break-word', hyphens: 'auto'}}>
+        <div
+            title={obtenerTooltipEvento(event)}
+            className="truncate text-sm md:text-base leading-tight font-semibold w-full h-full flex items-center gap-1 px-1"
+            style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}
+        >
             {event.tipo === "bloqueo" && (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -637,7 +1120,7 @@ function CalendarioContent() {
     );
 
     const TitleOnlyEvent = ({event}) => (
-        <div title={event.title} className="break-words text-[13px] leading-snug font-medium w-full flex items-center gap-1" style={{whiteSpace: 'normal', overflow: 'visible', wordBreak: 'break-word'}}>
+        <div title={obtenerTooltipEvento(event)} className="truncate text-sm md:text-base leading-tight font-semibold w-full flex items-center gap-1 px-1" style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
             {event.tipo === "bloqueo" && (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -650,7 +1133,8 @@ function CalendarioContent() {
     async function actualizarInformacionReserva(nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva, id_profesional, id_reserva) {
         try {
             if (!nombrePaciente || !apellidoPaciente || !rut || !telefono || !email || !fechaInicio || !horaInicio || !fechaFinalizacion || !horaFinalizacion || !estadoReserva || !id_profesional || !id_reserva) {
-                return toast.error("Debe llenar todos los campos para poder actualizar la reserva");
+                toast.error("Debe llenar todos los campos para poder actualizar la reserva");
+                return false;
             }
             const res = await fetch(`${API}/reservaPacientes/actualizarReservacion`, {
                 method: "POST",
@@ -658,16 +1142,22 @@ function CalendarioContent() {
                 mode: "cors",
                 body: JSON.stringify({nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva, id_profesional, id_reserva})
             });
-            if (!res.ok) return toast.error("El servidor no responde");
+            if (!res.ok) {
+                toast.error("El servidor no responde");
+                return false;
+            }
             const respuestaBackend = await res.json();
             if (respuestaBackend.message === true) {
                 setNombrePaciente(""); setApellidoPaciente(""); setTelefono(""); setRut(""); setEmail("");
                 await refrescarCalendario();
-                return toast.success("Se ha actualizado la reserva correctamente");
+                toast.success("Se ha actualizado la reserva correctamente");
+                return true;
             }
+            return false;
         } catch (error) {
             console.log(error);
-            return toast.error(error.message);
+            toast.error(error.message);
+            return false;
         }
     }
 
@@ -710,16 +1200,46 @@ function CalendarioContent() {
         setNombrePaciente(""); setApellidoPaciente(""); setTelefono(""); setRut(""); setEmail("");
     }
 
+    async function cambiarEstadoRapido(estadoNuevo) {
+        const nombreCompleto = `${nombrePaciente ?? ""} ${apellidoPaciente ?? ""}`.trim();
+        if (!id_reserva || !nombreCompleto) {
+            return toast.error("Debe seleccionar un paciente para cambiar su estado");
+        }
+
+        const actualizado = await actualizarInformacionReserva(
+            nombrePaciente,
+            apellidoPaciente,
+            rut,
+            telefono,
+            email,
+            fechaInicio,
+            horaInicio,
+            fechaFinalizacion,
+            horaFinalizacion,
+            estadoNuevo,
+            id_profesional,
+            id_reserva
+        );
+
+        if (actualizado) {
+            setEstadoReserva(estadoNuevo);
+            await seleccionarReservaEspecifica(id_reserva);
+        }
+    }
+
     function iniciarDragPopup(event) {
         if (!popupRef.current) return;
         const rect = popupRef.current.getBoundingClientRect();
+        const point = "touches" in event ? event.touches[0] : event;
+        if (!point) return;
         popupDragStateRef.current = {
             dragging: true,
-            offsetX: event.clientX - rect.left,
-            offsetY: event.clientY - rect.top,
+            offsetX: point.clientX - rect.left,
+            offsetY: point.clientY - rect.top,
         };
         setDraggingPopup(true);
         document.body.style.userSelect = "none";
+        document.body.style.touchAction = "none";
     }
 
     async function confirmarAgendamientoDesdePopup() {
@@ -771,6 +1291,18 @@ function CalendarioContent() {
 
                 const respuestaBackend = await res.json();
                 if (respuestaBackend.message === true) {
+                    await refrescarCalendario();
+                    setid_reserva(0);
+                    setNombrePaciente("");
+                    setApellidoPaciente("");
+                    setRut("");
+                    setTelefono("");
+                    setEmail("");
+                    setfechaInicio("");
+                    setHoraInicio("");
+                    setfechaFinalizacion("");
+                    setHoraFinalizacion("");
+                    setEstadoReserva("");
                     return toast.success("Se ha eliminado con exito la reserva");
                 } else if (respuestaBackend.message === false) {
                     return toast.success("No se ha podido eliminar la reserva. Intente mas tarde.");
@@ -804,48 +1336,83 @@ function CalendarioContent() {
                 </div>
 
                 {/* Formulario + Fechas */}
-                <div className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_0.9fr]">
-
-                    {/* Datos del paciente */}
-                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-                        <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-4 py-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                            <h2 className="text-sm font-semibold text-slate-700 tracking-wide uppercase">Datos del Paciente</h2>
+                <div className="mb-8 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.07)]">
+                    <div className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(15,23,42,0.98)_0%,rgba(49,46,129,0.95)_100%)] px-4 py-3.5">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5 text-cyan-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </span>
+                                <div>
+                                    <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-100">Formulario de Agenda</h2>
+                                    <p className="mt-0.5 text-xs text-slate-300">Datos del paciente, fechas y acciones en un solo bloque horizontal.</p>
+                                </div>
+                            </div>
+                            <span className="inline-flex items-center rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100">
+                                Agenda
+                            </span>
                         </div>
-                        <div className="space-y-3 p-4 md:p-5">
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Nombre</label>
-                                    <ShadcnInput value={nombrePaciente ?? ""} onChange={(e) => setNombrePaciente(e.target.value)}/>
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Apellido</label>
-                                    <ShadcnInput value={apellidoPaciente ?? ""} onChange={(e) => setApellidoPaciente(e.target.value)}/>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">RUT</label>
-                                <ShadcnInput
-                                    value={rut}
-                                    onChange={(e) => { const value = e.target.value.replace(/[^a-zA-Z0-9]/g, ""); setRut(value); }}
-                                    placeholder="12345678K (Sin puntos ni guion)"
-                                    className="w-full"
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Correo</label>
-                                    <ShadcnInput value={email ?? ""} onChange={(e) => setEmail(e.target.value)}/>
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Teléfono</label>
-                                    <ShadcnInput value={telefono ?? ""} onChange={(e) => setTelefono(e.target.value)}/>
-                                </div>
+                    </div>
 
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Profesional</label>
+                    <div className="space-y-4 p-4 md:p-5">
+                        <section className="rounded-[20px] border border-slate-200 bg-white p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">Formulario</h3>
+                                    <p className="mt-0.5 text-xs text-slate-500">Información principal del paciente y profesional.</p>
+                                </div>
+                                <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">
+                                    {id_reserva ? "Editando" : "Nueva"}
+                                </span>
+                            </div>
+
+                            <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+                                <div className="rounded-2xl border border-cyan-200 bg-cyan-50/80 px-3 py-2.5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-600">Paciente</p>
+                                    <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                                        {`${nombrePaciente || "Sin"} ${apellidoPaciente || "asignar"}`}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Profesional</p>
+                                    <p className="mt-1 truncate text-sm font-semibold text-slate-900">{obtenerNombreProfesionalSeleccionado()}</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Estado</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-900">{id_reserva ? "Editando reserva" : "Nueva reserva"}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">Nombre</label>
+                                    <ShadcnInput value={nombrePaciente ?? ""} onChange={(e) => setNombrePaciente(e.target.value)} className="h-11 rounded-xl border-slate-200 bg-white"/>
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">Apellido</label>
+                                    <ShadcnInput value={apellidoPaciente ?? ""} onChange={(e) => setApellidoPaciente(e.target.value)} className="h-11 rounded-xl border-slate-200 bg-white"/>
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">RUT</label>
+                                    <ShadcnInput
+                                        value={rut}
+                                        onChange={(e) => { const value = e.target.value.replace(/[^a-zA-Z0-9]/g, ""); setRut(value); }}
+                                        placeholder="12345678K"
+                                        className="h-11 w-full rounded-xl border-slate-200 bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">Correo</label>
+                                    <ShadcnInput value={email ?? ""} onChange={(e) => setEmail(e.target.value)} className="h-11 rounded-xl border-slate-200 bg-white"/>
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">Teléfono</label>
+                                    <ShadcnInput value={telefono ?? ""} onChange={(e) => setTelefono(e.target.value)} className="h-11 rounded-xl border-slate-200 bg-white"/>
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">Profesional</label>
                                     <SelectDinamic
                                         value={id_profesional}
                                         onChange={(e) => setId_profesional(Number(e.target.value))}
@@ -857,94 +1424,141 @@ function CalendarioContent() {
                                     />
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </section>
 
-                    {/* Fecha/hora + acciones */}
-                    <div className="space-y-3.5">
-                        {/* Inicio */}
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-3">
-                                <h3 className="text-sm font-semibold text-slate-700">Inicio</h3>
-                                <span className="text-[11px] text-slate-400 uppercase tracking-wider">Fecha y hora</span>
+                        {/*
+                        <section className="rounded-[20px] border border-slate-200 bg-white p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">Fecha Inicio</h3>
+                                    <p className="mt-0.5 text-xs text-slate-500">Selecciona la fecha y hora inicial.</p>
+                                </div>
+                                <span className="inline-flex items-center gap-2 rounded-xl border border-cyan-100 bg-cyan-50 px-3 py-1.5">
+                                    <span className="text-sm font-semibold text-cyan-800">Desde</span>
+                                </span>
                             </div>
-                            <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center">
-                                <div className="flex-1">
+
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.3fr_0.7fr]">
+                                <div>
                                     <ShadcnFechaHora onChange={manejarFechaHoraInicio}/>
                                 </div>
-                                <div className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 md:w-44">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] text-slate-400 uppercase">Fecha</span>
-                                        <span className="text-xs font-medium text-slate-800">{fechaInicio || "--"}</span>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Fecha</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">{fechaInicio || "--"}</p>
                                     </div>
-                                    <div className="mt-1.5 flex items-center justify-between">
-                                        <span className="text-[11px] text-slate-400 uppercase">Hora</span>
-                                        <span className="text-xs font-semibold text-emerald-600">{horaInicio || "--"}</span>
+                                    <div className="rounded-2xl border border-cyan-200 bg-cyan-50/80 px-4 py-3">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-600">Hora</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">{horaInicio || "--"}</p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </section>
 
-                        {/* Final */}
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-3">
-                                <h3 className="text-sm font-semibold text-slate-700">Final</h3>
-                                <span className="text-[11px] text-slate-400 uppercase tracking-wider">Debe ser el mismo día</span>
+                        <section className="rounded-[20px] border border-slate-200 bg-white p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-700">Fecha Fin</h3>
+                                    <p className="mt-0.5 text-xs text-slate-500">Define el cierre del bloque.</p>
+                                </div>
+                                <span className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5">
+                                    <span className="text-sm font-semibold text-slate-700">Hasta</span>
+                                </span>
                             </div>
-                            <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center">
-                                <div className="flex-1">
+
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.3fr_0.7fr]">
+                                <div>
                                     <ShadcnFechaHora onChange={manejarFechaHoraFinalizacion}/>
                                 </div>
-                                <div className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 md:w-44">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] text-slate-400 uppercase">Fecha</span>
-                                        <span className="text-xs font-medium text-slate-800">{fechaFinalizacion || "--"}</span>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Fecha</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">{fechaFinalizacion || "--"}</p>
                                     </div>
-                                    <div className="mt-1.5 flex items-center justify-between">
-                                        <span className="text-[11px] text-slate-400 uppercase">Hora</span>
-                                        <span className="text-xs font-semibold text-sky-600">{horaFinalizacion || "--"}</span>
+                                    <div className="rounded-2xl border border-cyan-200 bg-cyan-50/80 px-4 py-3">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-600">Hora</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">{horaFinalizacion || "--"}</p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </section>
+                        */}
 
-                        {/* Botones de acción */}
-                        <div className="flex flex-wrap gap-2 pt-0.5">
-                            <button
-                                onClick={() => insertarNuevaReserva(nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, id_profesional)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:from-sky-700 hover:to-cyan-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                Agregar
-                            </button>
+                        <div className="mt-4 rounded-[18px] border border-slate-200 bg-slate-50/70 p-3.5">
+                            <div className="mb-2.5 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+                                <div>
+                                    <h3 className="text-[13px] font-semibold uppercase tracking-[0.18em] text-slate-700">Acciones</h3>
+                                    <p className="mt-0.5 text-[11px] text-slate-500">Crear, editar, limpiar o eliminar la reserva activa.</p>
+                                </div>
+                            </div>
+                            <div className="mb-3 flex flex-wrap gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => cambiarEstadoRapido("asiste")}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-200/80 border-l-[4px] border-l-cyan-500 bg-cyan-50/80 px-3 py-2 text-xs font-semibold text-cyan-800 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)] transition-all duration-150 hover:bg-cyan-100"
+                                >
+                                    Asiste
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => cambiarEstadoRapido("no asiste")}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-pink-200/80 border-l-[4px] border-l-pink-500 bg-pink-50/80 px-3 py-2 text-xs font-semibold text-pink-800 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)] transition-all duration-150 hover:bg-pink-100"
+                                >
+                                    No asiste
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => cambiarEstadoRapido("finalizado")}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200/80 border-l-[4px] border-l-orange-500 bg-orange-50/80 px-3 py-2 text-xs font-semibold text-orange-800 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)] transition-all duration-150 hover:bg-orange-100"
+                                >
+                                    Finalizado
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-[1.25fr_0.9fr_0.95fr_0.85fr_1.3fr]">
+                                <button
+                                    onClick={ingresarPacienteDesdeAgenda}
+                                    className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.18)] transition-all duration-150 hover:from-cyan-600 hover:to-sky-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v6m3-3h-6m-6 7a4 4 0 100-8 4 4 0 000 8zm0 0H6a2 2 0 01-2-2v-1a6 6 0 016-6h2" />
+                                    </svg>
+                                    Ingresar Paciente
+                                </button>
+                                <button
+                                    onClick={() => insertarNuevaReserva(nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, id_profesional)}
+                                    className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.18)] transition-all duration-150 hover:from-sky-700 hover:to-cyan-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    Agregar
+                                </button>
 
-                            <button
-                                onClick={() => actualizarInformacionReserva(nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva, id_profesional, id_reserva)}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-sm font-medium text-sky-700 transition-colors duration-150 hover:bg-sky-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                </svg>
-                                Actualizar
-                            </button>
+                                <button
+                                    onClick={() => actualizarInformacionReserva(nombrePaciente, apellidoPaciente, rut, telefono, email, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion, estadoReserva, id_profesional, id_reserva)}
+                                    className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(79,70,229,0.22)] transition-all duration-150 hover:from-violet-700 hover:to-indigo-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    Actualizar
+                                </button>
 
-                            <button
-                                onClick={() => limpiarData()}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                </svg>
-                                Limpiar
-                            </button>
+                                <button
+                                    onClick={() => limpiarData()}
+                                    className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Limpiar
+                                </button>
 
-                            <button
-                                onClick={() => eliminadoReserva(id_reserva)}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                                </svg>
-                                Eliminar Reservacion
-                            </button>
+                                <button
+                                    onClick={() => eliminadoReserva(id_reserva)}
+                                    className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-slate-800 to-slate-700 px-3.5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition-all duration-150 hover:from-slate-900 hover:to-slate-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                    </svg>
+                                    Eliminar Reservacion
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -977,7 +1591,19 @@ function CalendarioContent() {
                                 <span className="text-xs text-slate-500">Anulada</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <span className="inline-block w-3 h-3 rounded bg-red-600"></span>
+                                <span className="inline-block w-3 h-3 rounded bg-cyan-500"></span>
+                                <span className="text-xs text-slate-500">Asiste</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="inline-block w-3 h-3 rounded bg-pink-500"></span>
+                                <span className="text-xs text-slate-500">No asiste</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="inline-block w-3 h-3 rounded bg-orange-500"></span>
+                                <span className="text-xs text-slate-500">Finalizado</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="inline-block h-3 w-3 rounded border border-slate-500/60 bg-slate-500/50"></span>
                                 <span className="text-xs text-slate-500">Bloqueado</span>
                             </div>
                             <div className="flex items-center gap-1.5">
@@ -1003,8 +1629,9 @@ function CalendarioContent() {
                         <DnDCalendar
                             localizer={localizer}
                             events={events}
-                            backgroundEvents={floatingDraft ? [floatingDraft] : []}
+                            backgroundEvents={floatingDraft ? [...backgroundCalendarEvents, floatingDraft] : backgroundCalendarEvents}
                             eventPropGetter={eventStyleGetter}
+                            backgroundEventPropGetter={backgroundEventStyleGetter}
                             components={{
                                 event: EventComponent,
                                 day: {event: TitleOnlyEvent},
@@ -1019,14 +1646,19 @@ function CalendarioContent() {
                             view={currentView}
                             onView={(nextView) => setCurrentView(nextView)}
                             defaultView="week"
-                            views={["month", "week", "day", "agenda"]}
+                            views={vistasDisponibles}
                             style={{height: "100%"}}
                             selectable
                             resizable
                             popup
-                            step={30}
-                            timeslots={2}
-                            longPressThreshold={10}
+                            min={crearHoraLimite(HORA_MINIMA_AGENDA)}
+                            max={crearHoraLimite(HORA_MAXIMA_AGENDA)}
+                            scrollToTime={crearHoraLimite(HORA_MINIMA_AGENDA)}
+                            step={15}
+                            timeslots={1}
+                            draggableAccessor={(event) => event.tipo === "reserva"}
+                            resizableAccessor={(event) => event.tipo === "reserva"}
+                            longPressThreshold={esMobile ? 300 : 10}
                             onSelecting={(slot) => {
                                 const start = slot.start ?? slot;
                                 const end = slot.end ?? slot;
@@ -1038,9 +1670,6 @@ function CalendarioContent() {
                             }}
                             onSelectEvent={(event) => {
                                 limpiarSeleccionTemporal();
-                                if (event.tipo === "bloqueo") {
-                                    return toast("Bloqueo: " + (event.title || "Sin motivo"), {icon: "🔒"});
-                                }
                                 if (!event?.id_reserva) { toast.error("No se encontró el ID de la reserva"); return; }
                                 setid_reserva(event.id_reserva);
                                 seleccionarReservaEspecifica(event.id_reserva);
@@ -1080,40 +1709,62 @@ function CalendarioContent() {
                 <div className="fixed inset-0 z-[80] bg-transparent" onMouseDown={(e) => e.preventDefault()}>
                     <div
                         ref={popupRef}
-                        className="absolute w-[420px] rounded-3xl border border-violet-200 bg-white/95 shadow-[0_28px_80px_rgba(76,29,149,0.18)] backdrop-blur-xl"
+                        className="absolute w-[calc(100vw-32px)] max-w-[420px] rounded-[24px] border border-violet-200 bg-white/95 shadow-[0_28px_80px_rgba(76,29,149,0.18)] backdrop-blur-xl md:rounded-3xl"
                         style={{left: popupPosition.x, top: popupPosition.y}}
                         onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                     >
                         <div
-                            className="flex cursor-move items-center justify-between rounded-t-3xl border-b border-violet-100 bg-[linear-gradient(135deg,rgba(245,243,255,0.98),rgba(237,233,254,0.98))] px-4 py-3"
+                            className="flex cursor-move touch-none items-center justify-between rounded-t-[24px] border-b border-violet-100 bg-[linear-gradient(135deg,rgba(245,243,255,0.98),rgba(237,233,254,0.98))] px-3 py-2.5 md:rounded-t-3xl md:px-4 md:py-3"
                             onMouseDown={iniciarDragPopup}
+                            onTouchStart={iniciarDragPopup}
                         >
                             <div>
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-700">Nuevo agendamiento</p>
-                                <p className="mt-1 text-sm font-semibold text-slate-800">Confirma el rango seleccionado</p>
+                                <p className="mt-1 text-xs font-semibold text-slate-800 md:text-sm">Confirma el rango seleccionado</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={limpiarSeleccionTemporal}
-                                className="rounded-full border border-violet-100 bg-white px-2.5 py-1 text-xs text-slate-500 hover:text-slate-700"
+                                className="rounded-full border border-violet-100 bg-white px-2 py-1 text-[11px] text-slate-500 hover:text-slate-700 md:px-2.5 md:text-xs"
                             >
                                 Cerrar
                             </button>
                         </div>
 
-                        <div className="max-h-[58vh] space-y-3 overflow-y-auto px-4 py-4 text-sm text-slate-600">
-                            <div className="grid grid-cols-3 gap-2">
+                        <div className="max-h-[62vh] space-y-3 overflow-y-auto px-3 py-3 text-xs text-slate-600 md:max-h-[58vh] md:px-4 md:py-4 md:text-sm">
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                                    <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Fecha</div>
+                                    <div className="mt-1 truncate font-semibold capitalize text-slate-800">{formatFechaLarga(selectionDraft.start)}</div>
+                                    <input
+                                        type="date"
+                                        value={formatearFechaLocal(selectionDraft.start)}
+                                        onChange={(e) => actualizarFechaSeleccionDraft(e.target.value)}
+                                        className="mt-2 h-9 w-full rounded-xl border border-violet-200 bg-white px-3 text-[12px] font-medium text-slate-800 outline-none transition-all focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                                    />
+                                </div>
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
                                     <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Inicio</div>
                                     <div className="mt-1 font-semibold text-violet-700">{formatHoraCorta(selectionDraft.start)}</div>
+                                    <input
+                                        type="time"
+                                        step="900"
+                                        value={format(selectionDraft.start, "HH:mm")}
+                                        onChange={(e) => actualizarHoraSeleccionDraft("start", e.target.value)}
+                                        className="mt-2 h-9 w-full rounded-xl border border-violet-200 bg-white px-3 text-[12px] font-medium text-slate-800 outline-none transition-all focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                                    />
                                 </div>
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
                                     <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Termino</div>
                                     <div className="mt-1 font-semibold text-violet-700">{formatHoraCorta(selectionDraft.end)}</div>
-                                </div>
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                                    <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Fecha</div>
-                                    <div className="mt-1 truncate font-semibold capitalize text-slate-800">{formatFechaLarga(selectionDraft.start)}</div>
+                                    <input
+                                        type="time"
+                                        step="900"
+                                        value={format(selectionDraft.end, "HH:mm")}
+                                        onChange={(e) => actualizarHoraSeleccionDraft("end", e.target.value)}
+                                        className="mt-2 h-9 w-full rounded-xl border border-violet-200 bg-white px-3 text-[12px] font-medium text-slate-800 outline-none transition-all focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                                    />
                                 </div>
                             </div>
 
@@ -1128,7 +1779,7 @@ function CalendarioContent() {
                                     <p className="mt-1 text-xs text-slate-500">Completa los datos para crear el agendamiento.</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                     <div className="space-y-1">
                                         <label className="text-[11px] text-slate-500">Nombre</label>
                                         <input
@@ -1165,7 +1816,7 @@ function CalendarioContent() {
                                             placeholder="+56..."
                                         />
                                     </div>
-                                    <div className="col-span-2 space-y-1">
+                                    <div className="space-y-1 sm:col-span-2">
                                         <label className="text-[11px] text-slate-500">Correo</label>
                                         <input
                                             type="email"
@@ -1177,20 +1828,51 @@ function CalendarioContent() {
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                                <div className="mb-3">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">Bloqueo rápido</p>
+                                    <p className="mt-1 text-xs text-slate-500">Arrastra un rango en el calendario y usa este motivo para bloquear ese horario del mismo día.</p>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[11px] text-slate-500">Motivo del bloqueo</label>
+                                    <input
+                                        value={popupForm.motivoBloqueo}
+                                        onChange={(e) => setPopupForm((prev) => ({...prev, motivoBloqueo: e.target.value}))}
+                                        className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] text-slate-800 outline-none transition-all focus:border-slate-400 focus:ring-4 focus:ring-slate-200/70"
+                                        placeholder="Vacaciones, reunión, pausa, etc."
+                                    />
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-4 py-4">
+                        <div className="flex flex-col gap-2 border-t border-slate-200 px-3 py-3 md:flex-row md:items-center md:justify-end md:px-4 md:py-4">
                             <button
                                 type="button"
                                 onClick={limpiarSeleccionTemporal}
-                                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 md:w-auto"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="button"
+                                onClick={() => insertarBloqueoHorario(
+                                    id_profesional,
+                                    formatearFechaLocal(selectionDraft.start),
+                                    selectionDraft.start.toTimeString().slice(0, 8),
+                                    formatearFechaLocal(selectionDraft.end),
+                                    selectionDraft.end.toTimeString().slice(0, 8),
+                                    popupForm.motivoBloqueo
+                                )}
+                                className="w-full rounded-xl border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-200 md:w-auto"
+                            >
+                                Bloquear horario
+                            </button>
+                            <button
+                                type="button"
                                 onClick={confirmarAgendamientoDesdePopup}
-                                className="rounded-xl bg-gradient-to-r from-violet-700 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(124,58,237,0.24)] transition-all hover:from-violet-600 hover:to-purple-500"
+                                className="w-full rounded-xl bg-gradient-to-r from-violet-700 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(124,58,237,0.24)] transition-all hover:from-violet-600 hover:to-purple-500 md:w-auto"
                             >
                                 Agendar
                             </button>

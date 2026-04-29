@@ -39,10 +39,10 @@ const stagger = {
 };
 
 const acciones = [
-    { label: "Nuevo paciente", desc: "Registrar", icon: UserPlus, href: "/dashboard/GestionPaciente", color: "from-cyan-400 to-cyan-600" },
-    { label: "Nueva cita", desc: "Agendar", icon: CalendarPlus, href: "/dashboard/calendario", color: "from-indigo-400 to-indigo-600" },
-    { label: "Ficha clinica", desc: "Consultar", icon: FileText, href: "/dashboard/FichaClinica", color: "from-cyan-500 to-indigo-500" },
-    { label: "Calendario", desc: "Ver agenda", icon: Calendar, href: "/dashboard/calendarioGeneral", color: "from-indigo-500 to-cyan-500" },
+    { label: "Nuevo paciente", desc: "Registrar", icon: UserPlus, href: "/dashboard/GestionPaciente", color: "from-teal-500 to-teal-700" },
+    { label: "Nueva cita", desc: "Agendar", icon: CalendarPlus, href: "/dashboard/calendario", color: "from-indigo-600 to-indigo-800" },
+    { label: "Ficha clinica", desc: "Consultar", icon: FileText, href: "/dashboard/FichaClinica", color: "from-indigo-700 to-teal-600" },
+    { label: "Calendario", desc: "Ver agenda", icon: Calendar, href: "/dashboard/calendarioGeneral", color: "from-teal-600 to-indigo-700" },
 ];
 
 function getFechaHoy() {
@@ -61,6 +61,35 @@ function getGreeting() {
     return "Buenas noches";
 }
 
+function normalizarEstadoReserva(estado = "") {
+    return String(estado)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+function estadoDotClass(estado) {
+    const normalizado = normalizarEstadoReserva(estado);
+    if (normalizado === "asiste") return "bg-cyan-400 shadow-sm shadow-cyan-400/40";
+    if (normalizado === "no asiste" || normalizado === "no asistio" || normalizado === "no asistste") return "bg-pink-400 shadow-sm shadow-pink-400/40";
+    if (normalizado === "finalizado") return "bg-orange-400 shadow-sm shadow-orange-400/40";
+    if (normalizado === "confirmada") return "bg-emerald-400 shadow-sm shadow-emerald-400/40";
+    if (normalizado === "reservada") return "bg-indigo-400 shadow-sm shadow-indigo-400/40";
+    if (normalizado === "anulada") return "bg-red-400 shadow-sm shadow-red-400/40";
+    return "bg-slate-300";
+}
+
+function estadoBadgeClass(estado) {
+    const normalizado = normalizarEstadoReserva(estado);
+    if (normalizado === "asiste") return "bg-cyan-500/15 text-cyan-500";
+    if (normalizado === "no asiste" || normalizado === "no asistio" || normalizado === "no asistste") return "bg-pink-500/15 text-pink-500";
+    if (normalizado === "finalizado") return "bg-orange-500/15 text-orange-500";
+    if (normalizado === "confirmada") return "bg-emerald-500/15 text-emerald-400";
+    if (normalizado === "reservada") return "bg-indigo-500/15 text-indigo-400";
+    if (normalizado === "anulada") return "bg-red-500/15 text-red-400";
+    return "bg-slate-100 text-slate-500";
+}
+
 function MiniCalendar() {
     const now = new Date();
     const year = now.getFullYear();
@@ -76,10 +105,10 @@ function MiniCalendar() {
     }, [year, month]);
 
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+        <div className="rounded-[24px] border border-slate-300 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
             <div className="mb-3 flex items-center justify-between">
                 <span className="text-[13px] font-semibold capitalize text-slate-700">{monthLabel}</span>
-                <Link href="/dashboard/calendarioGeneral" className="text-[11px] font-medium text-cyan-600 transition-colors hover:text-cyan-700">
+                <Link href="/dashboard/calendarioGeneral" className="text-[11px] font-medium text-indigo-600 transition-colors hover:text-indigo-700">
                     Expandir
                 </Link>
             </div>
@@ -101,7 +130,7 @@ function MiniCalendar() {
                             className={cn(
                                 "flex h-7 w-full items-center justify-center rounded-lg text-[10px] font-medium transition-all duration-200",
                                 isToday
-                                    ? "bg-gradient-to-br from-cyan-500 to-indigo-500 text-white shadow-md shadow-cyan-500/30 scale-110"
+                                    ? "bg-gradient-to-br from-indigo-700 to-teal-600 text-white shadow-md shadow-indigo-500/30 scale-110"
                                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                             )}
                         >
@@ -157,7 +186,7 @@ export default function DashboardHome() {
         hora: cita.horaInicio || "--:--",
         paciente: `${cita.nombrePaciente || ""} ${cita.apellidoPaciente || ""}`.trim(),
         tipo: cita.estadoReserva || "Sin estado",
-        estado: cita.estadoReserva?.toLowerCase() || "reservada",
+        estado: normalizarEstadoReserva(cita.estadoReserva || "reservada"),
         iniciales: `${(cita.nombrePaciente || "")[0] || ""}${(cita.apellidoPaciente || "")[0] || ""}`.toUpperCase(),
         nombreProfesional: cita.nombreProfesional || "Sin profesional",
     }));
@@ -168,10 +197,10 @@ export default function DashboardHome() {
     const citasReservadas = dataLista.filter((c) => c.estadoReserva?.toLowerCase() === "reservada").length;
 
     const kpis = [
-        { label: "Citas para hoy", value: totalCitas, icon: CalendarDays, color: "from-cyan-400 to-cyan-600", glow: "cyan", pct: 100 },
-        { label: "Confirmadas", value: citasConfirmadas, icon: TrendingUp, color: "from-cyan-500 to-indigo-500", glow: "cyan", pct: totalCitas > 0 ? Math.round((citasConfirmadas / totalCitas) * 100) : 0 },
-        { label: "Anuladas", value: citasAnuladas, icon: ClipboardList, color: "from-indigo-400 to-indigo-600", glow: "indigo", pct: totalCitas > 0 ? Math.round((citasAnuladas / totalCitas) * 100) : 0 },
-        { label: "Reservadas", value: citasReservadas, icon: Users, color: "from-indigo-500 to-cyan-500", glow: "indigo", pct: totalCitas > 0 ? Math.round((citasReservadas / totalCitas) * 100) : 0 },
+        { label: "Citas para hoy", value: totalCitas, icon: CalendarDays, color: "from-teal-400 to-teal-600", glow: "teal", pct: 100 },
+        { label: "Confirmadas", value: citasConfirmadas, icon: TrendingUp, color: "from-indigo-700 to-teal-600", glow: "teal", pct: totalCitas > 0 ? Math.round((citasConfirmadas / totalCitas) * 100) : 0 },
+        { label: "Anuladas", value: citasAnuladas, icon: ClipboardList, color: "from-indigo-500 to-indigo-700", glow: "indigo", pct: totalCitas > 0 ? Math.round((citasAnuladas / totalCitas) * 100) : 0 },
+        { label: "Reservadas", value: citasReservadas, icon: Users, color: "from-teal-600 to-indigo-700", glow: "indigo", pct: totalCitas > 0 ? Math.round((citasReservadas / totalCitas) * 100) : 0 },
     ];
 
     return (
@@ -194,7 +223,7 @@ export default function DashboardHome() {
                             <p className={cn("mt-1.5 text-[12px] font-bold tracking-wide text-slate-400", michroma.className)}>Healthcare Information System</p>
                         </div>
 
-                        <div className="hidden items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-[0_12px_30px_rgba(15,23,42,0.08)] sm:flex">
+                        <div className="hidden items-center gap-3 rounded-full border border-slate-300 bg-white px-4 py-2 shadow-[0_12px_30px_rgba(15,23,42,0.12)] sm:flex">
                             <div className="relative flex h-2 w-2">
                                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -215,7 +244,7 @@ export default function DashboardHome() {
                     {kpis.map((kpi, i) => {
                         const Icon = kpi.icon;
                         const glowColors = {
-                            cyan: { blob1: "bg-cyan-500", blob2: "bg-cyan-400", bar: "from-cyan-400 to-cyan-600", barShadow: "shadow-cyan-500/40", iconRing: "ring-cyan-400/30", iconShadow: "shadow-cyan-500/30", pctText: "text-cyan-400", dotBg: "bg-cyan-400", dotGlow: "bg-cyan-400" },
+                            teal: { blob1: "bg-teal-500", blob2: "bg-teal-400", bar: "from-teal-400 to-teal-600", barShadow: "shadow-teal-500/40", iconRing: "ring-teal-400/30", iconShadow: "shadow-teal-500/30", pctText: "text-teal-400", dotBg: "bg-teal-400", dotGlow: "bg-teal-400" },
                             indigo: { blob1: "bg-indigo-500", blob2: "bg-indigo-400", bar: "from-indigo-400 to-indigo-600", barShadow: "shadow-indigo-500/40", iconRing: "ring-indigo-400/30", iconShadow: "shadow-indigo-500/30", pctText: "text-indigo-400", dotBg: "bg-indigo-400", dotGlow: "bg-indigo-400" },
                         };
                         const g = glowColors[kpi.glow];
@@ -225,7 +254,7 @@ export default function DashboardHome() {
                                 key={kpi.label}
                                 variants={fadeUp}
                                 custom={i + 1}
-                                className="group relative cursor-default overflow-hidden rounded-lg border border-slate-200 bg-white p-2.5 shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(15,23,42,0.12)]"
+                                className="group relative cursor-default overflow-hidden rounded-lg border border-slate-300 bg-white p-2.5 shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(15,23,42,0.16)]"
                             >
                                 <div className={cn("pointer-events-none absolute -top-8 -right-8 h-20 w-20 rounded-full opacity-[0.1] blur-3xl transition-opacity group-hover:opacity-[0.16]", g.blob1)} />
                                 <div className={cn("pointer-events-none absolute -bottom-5 -left-5 h-16 w-16 rounded-full opacity-[0.06] blur-3xl", g.blob2)} />
@@ -274,11 +303,11 @@ export default function DashboardHome() {
                         initial="hidden"
                         animate="visible"
                         custom={5}
-                        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)] lg:col-span-2"
+                        className="overflow-hidden rounded-[28px] border border-slate-300 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.12)] lg:col-span-2"
                     >
                         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-indigo-500 shadow-sm shadow-cyan-500/20">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-700 to-teal-600 shadow-sm shadow-indigo-500/20">
                                     <Clock className="h-3.5 w-3.5 text-white" strokeWidth={2} />
                                 </div>
                                 <div>
@@ -288,7 +317,7 @@ export default function DashboardHome() {
                             </div>
                             <Link
                                 href="/dashboard/agendaCitas"
-                                className="group/link flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-all hover:border-cyan-400/30 hover:bg-cyan-50 hover:text-cyan-600"
+                                className="group/link flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-all hover:border-indigo-400/30 hover:bg-indigo-50 hover:text-indigo-600"
                             >
                                 Ver todo
                                 <ArrowUpRight className="h-3 w-3 transition-transform group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" />
@@ -316,13 +345,7 @@ export default function DashboardHome() {
                                         </div>
 
                                         <div className="flex flex-col items-center gap-0.5">
-                                            <div className={cn(
-                                                "h-2 w-2 rounded-full",
-                                                cita.estado === "confirmada" && "bg-emerald-400 shadow-sm shadow-emerald-400/40",
-                                                cita.estado === "reservada" && "bg-indigo-400 shadow-sm shadow-indigo-400/40",
-                                                cita.estado === "anulada" && "bg-red-400 shadow-sm shadow-red-400/40",
-                                                !["confirmada", "reservada", "anulada"].includes(cita.estado) && "bg-slate-300"
-                                            )} />
+                                            <div className={cn("h-2 w-2 rounded-full", estadoDotClass(cita.estado))} />
                                             <div className="h-6 w-px bg-slate-200" />
                                         </div>
 
@@ -337,18 +360,9 @@ export default function DashboardHome() {
 
                                         <span className={cn(
                                             "hidden sm:inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium capitalize",
-                                            cita.estado === "confirmada" && "bg-emerald-500/15 text-emerald-400",
-                                            cita.estado === "reservada" && "bg-indigo-500/15 text-indigo-400",
-                                            cita.estado === "anulada" && "bg-red-500/15 text-red-400",
-                                            !["confirmada", "reservada", "anulada"].includes(cita.estado) && "bg-slate-100 text-slate-500"
+                                            estadoBadgeClass(cita.estado)
                                         )}>
-                                            <span className={cn(
-                                                "h-1 w-1 rounded-full",
-                                                cita.estado === "confirmada" && "bg-emerald-400",
-                                                cita.estado === "reservada" && "bg-indigo-400",
-                                                cita.estado === "anulada" && "bg-red-400",
-                                                !["confirmada", "reservada", "anulada"].includes(cita.estado) && "bg-slate-300"
-                                            )} />
+                                            <span className={cn("h-1 w-1 rounded-full", estadoDotClass(cita.estado))} />
                                             {cita.nombreProfesional}
                                         </span>
 
@@ -378,7 +392,7 @@ export default function DashboardHome() {
                             initial="hidden"
                             animate="visible"
                             custom={6}
-                            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)]"
+                            className="rounded-[24px] border border-slate-300 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.12)]"
                         >
                             <div className="mb-3 flex items-center gap-2">
                                 <Zap className="h-4 w-4 text-indigo-500" strokeWidth={2} />
@@ -391,7 +405,7 @@ export default function DashboardHome() {
                                         <Link
                                             key={acc.label}
                                             href={acc.href}
-                                            className="group relative flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_40px_rgba(15,23,42,0.08)]"
+                                            className="group relative flex flex-col items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-4 text-center transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_40px_rgba(15,23,42,0.12)]"
                                         >
                                             <div className={cn(
                                                 "flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br shadow-sm transition-transform duration-300 group-hover:scale-110",
