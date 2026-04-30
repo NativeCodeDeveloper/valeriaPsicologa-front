@@ -565,6 +565,18 @@ function CalendarioContent() {
             return false;
         }
 
+        if (tipoSolapamiento === "bloqueo") {
+            if (!selectionGuardRef.current.overlap) {
+                selectionGuardRef.current.overlap = true;
+                toast.error("Horario bloqueado. No es posible agendar en este período.");
+                setTimeout(() => {
+                    selectionGuardRef.current.overlap = false;
+                }, 1200);
+            }
+            setSelectionPreview(null);
+            return false;
+        }
+
         return true;
     }
 
