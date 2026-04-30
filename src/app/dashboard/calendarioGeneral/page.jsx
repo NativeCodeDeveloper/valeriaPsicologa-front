@@ -147,18 +147,18 @@ export default function Calendario() {
             .rbc-month-view .rbc-event {
                 min-height: 0 !important; height: auto !important; padding: 2px 3px !important;
                 line-height: 1.1 !important; white-space: normal !important; overflow: visible !important; word-break: break-word !important;
-                font-size: 40% !important;
+                font-size: 60% !important;
             }
             .rbc-time-view .rbc-event {
                 min-height: 0 !important; padding: 1px 2px !important;
                 line-height: 1.1 !important; white-space: normal !important; overflow: hidden !important; word-break: break-word !important;
-                font-size: 48% !important;
+                font-size: 72% !important;
             }
             .rbc-month-view .rbc-day-slot { min-height: 80px !important; }
             .rbc-row-segment { z-index: 1 !important; }
-            .rbc-event-label, .rbc-event-content { white-space: normal !important; overflow: visible !important; word-break: break-word !important; font-size: 40% !important; }
+            .rbc-event-label, .rbc-event-content { white-space: normal !important; overflow: visible !important; word-break: break-word !important; font-size: 60% !important; }
             .rbc-time-view .rbc-event-label,
-            .rbc-time-view .rbc-event-content { font-size: 48% !important; }
+            .rbc-time-view .rbc-event-content { font-size: 72% !important; }
             .rbc-event-label { display: none !important; }
             @media (max-width: 767px) {
                 .rbc-time-view,
@@ -707,7 +707,7 @@ export default function Calendario() {
     const EventComponent = ({event}) => (
         <div
             title={obtenerTooltipEvento(event)}
-            className="truncate text-[6px] leading-none w-full h-full flex items-center gap-1 px-[2px]"
+            className="truncate text-[9px] leading-none w-full h-full flex items-center gap-1 px-[2px]"
             style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}
         >
             {event.tipo === "bloqueo" && (
@@ -720,7 +720,7 @@ export default function Calendario() {
     );
 
     const TitleOnlyEvent = ({event}) => (
-        <div title={obtenerTooltipEvento(event)} className="truncate text-[6px] leading-none font-medium w-full flex items-center gap-1" style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+        <div title={obtenerTooltipEvento(event)} className="truncate text-[9px] leading-none font-medium w-full flex items-center gap-1" style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
             {event.tipo === "bloqueo" && (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

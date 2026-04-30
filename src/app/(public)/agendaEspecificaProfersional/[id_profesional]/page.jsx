@@ -14,6 +14,9 @@ function formatDateToYMD(date) {
     return `${y}-${m}-${d}`;
 }
 
+const MINUTOS_ANTICIPACION_MINIMA = 60;
+const DIAS_SEMANA = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
 export default function CalendarioMensualHoras() {
     const {id_profesional} = useParams();
     const [nombreProfesional, setNombreProfesional] = useState("");
@@ -60,7 +63,7 @@ export default function CalendarioMensualHoras() {
     const generarDiasMes = () => {
         const year = mesActual.getFullYear();
         const month = mesActual.getMonth();
-        const firstDay = new Date(year, month, 1).getDay(); // 0=domingo
+        const firstDay = (new Date(year, month, 1).getDay() + 6) % 7; // 0=lunes, 6=domingo
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
         const dias = [];
@@ -117,6 +120,24 @@ export default function CalendarioMensualHoras() {
         return (hh * 60) + mm;
     };
 
+    const requiereMasDeUnaHoraDeAnticipacion = (fecha, hora) => {
+        if (!fecha) return false;
+
+        const today = new Date();
+        const day = new Date(fecha);
+        today.setHours(0, 0, 0, 0);
+        day.setHours(0, 0, 0, 0);
+
+        const isToday = day.getTime() === today.getTime();
+        if (!isToday) return false;
+
+        const now = new Date();
+        const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+        const slotStartMinutes = hhmmToMinutes(hora);
+
+        return slotStartMinutes < nowMinutes + MINUTOS_ANTICIPACION_MINIMA;
+    };
+
     /* ---------- handlers ---------- */
     const seleccionarFecha = (fecha) => {
         const today = new Date();
@@ -163,25 +184,9 @@ export default function CalendarioMensualHoras() {
     };
 
     const seleccionarInicio = (hora) => {
-        // Bloquear horas pasadas si la fecha seleccionada es hoy
-        if (fechaSeleccionada) {
-            const today = new Date();
-            const day = new Date(fechaSeleccionada);
-            today.setHours(0, 0, 0, 0);
-            day.setHours(0, 0, 0, 0);
-
-            const isToday = day.getTime() === today.getTime();
-            if (isToday) {
-                const now = new Date();
-                const nowMinutes = (now.getHours() * 60) + now.getMinutes();
-                const slotStartMinutes = hhmmToMinutes(hora);
-
-                // Si el bloque ya empezó, no permitir agendar
-                if (slotStartMinutes < nowMinutes) {
-                    toast.error("No puedes agendar una hora que ya pasó");
-                    return;
-                }
-            }
+        if (requiereMasDeUnaHoraDeAnticipacion(fechaSeleccionada, hora)) {
+            toast.error("Debes agendar con al menos 1 hora de anticipación");
+            return;
         }
 
         const horaFinAuto = addMinutesToHHMM(hora, 60);
@@ -443,7 +448,7 @@ export default function CalendarioMensualHoras() {
 
                     {/* calendario */}
                     <div className="mt-4 grid grid-cols-7 gap-2 rounded-xl bg-slate-900/[0.02] p-2 ring-1 ring-slate-900/5">
-                        {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, idx) => (
+                        {DIAS_SEMANA.map((d, idx) => (
                             <strong key={`weekday-${idx}`}
                                     className="text-center text-xs font-semibold text-slate-500">{d}</strong>
                         ))}
@@ -524,15 +529,11 @@ export default function CalendarioMensualHoras() {
                                             return day.getTime() === today.getTime();
                                         })();
 
-                                        const isPastHour = (() => {
-                                            if (!isTodaySelected) return false;
-                                            const now = new Date();
-                                            const nowMinutes = (now.getHours() * 60) + now.getMinutes();
-                                            const slotStartMinutes = hhmmToMinutes(entry.start);
-                                            return slotStartMinutes < nowMinutes;
-                                        })();
+                                        const isPastHour = isTodaySelected
+                                            ? requiereMasDeUnaHoraDeAnticipacion(fechaSeleccionada, entry.start)
+                                            : false;
 
-                                        // Solo mostrar slots que NO estén bloqueados NI sean pasados
+                                        // Solo mostrar slots que NO estén bloqueados ni dentro de la hora mínima de anticipación
                                         return !isBlocked && !isPastHour;
                                     })
                                     .map((entry, idx) => {
@@ -567,13 +568,9 @@ export default function CalendarioMensualHoras() {
                                         day.setHours(0, 0, 0, 0);
                                         return day.getTime() === today.getTime();
                                     })();
-                                    const isPastHour = (() => {
-                                        if (!isTodaySelected) return false;
-                                        const now = new Date();
-                                        const nowMinutes = (now.getHours() * 60) + now.getMinutes();
-                                        const slotStartMinutes = hhmmToMinutes(entry.start);
-                                        return slotStartMinutes < nowMinutes;
-                                    })();
+                                    const isPastHour = isTodaySelected
+                                        ? requiereMasDeUnaHoraDeAnticipacion(fechaSeleccionada, entry.start)
+                                        : false;
                                     return !isBlocked && !isPastHour;
                                 }).length === 0 && (
                                     <div className="text-center py-8 text-red-500">
