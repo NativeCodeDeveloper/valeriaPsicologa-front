@@ -232,6 +232,7 @@ function CalendarioContent() {
     const [listaProfesionales, setListaProfesionales] = useState([]);
     const [id_profesional, setId_profesional] = useState("");
     const [backgroundCalendarEvents, setBackgroundCalendarEvents] = useState([]);
+    const [mostrarListaBloqueos, setMostrarListaBloqueos] = useState(true);
     const [selectionPreview, setSelectionPreview] = useState(null);
     const [selectionDraft, setSelectionDraft] = useState(null);
     const [floatingDraft, setFloatingDraft] = useState(null);
@@ -501,7 +502,7 @@ function CalendarioContent() {
         }
 
         if (isOverlapping(nuevoInicio, nuevoFin)) {
-            toast.error("La hora ajustada se superpone con otra reserva o bloqueo.");
+            toast.error("Esta hora tiene un bloqueo u hora preexistente.");
             return;
         }
 
@@ -526,7 +527,7 @@ function CalendarioContent() {
         }
 
         if (isOverlapping(nuevoInicio, nuevoFin)) {
-            toast.error("La fecha ajustada se superpone con otra reserva o bloqueo.");
+            toast.error("Esta hora tiene un bloqueo u hora preexistente.");
             return;
         }
 
@@ -553,22 +554,10 @@ function CalendarioContent() {
         }
 
         const tipoSolapamiento = obtenerTipoSolapamiento(start, end, ignoredReservaId);
-        if (tipoSolapamiento === "reserva") {
+        if (tipoSolapamiento) {
             if (!selectionGuardRef.current.overlap) {
                 selectionGuardRef.current.overlap = true;
-                toast.error("Horario no disponible. El rango se superpone con otra reserva.");
-                setTimeout(() => {
-                    selectionGuardRef.current.overlap = false;
-                }, 1200);
-            }
-            setSelectionPreview(null);
-            return false;
-        }
-
-        if (tipoSolapamiento === "bloqueo") {
-            if (!selectionGuardRef.current.overlap) {
-                selectionGuardRef.current.overlap = true;
-                toast.error("Horario bloqueado. No es posible agendar en este período.");
+                toast.error("Esta hora tiene un bloqueo u hora preexistente.");
                 setTimeout(() => {
                     selectionGuardRef.current.overlap = false;
                 }, 1200);
@@ -719,7 +708,7 @@ function CalendarioContent() {
                 return false;
             }
             if (isOverlapping(inicio, final)) {
-                toast.error('La hora seleccionada ya está ocupada (verifique otras horas)');
+                toast.error('Esta hora tiene un bloqueo u hora preexistente.');
                 return false;
             }
 
@@ -882,7 +871,7 @@ function CalendarioContent() {
             });
 
             if (!res.ok) {
-                return toast.error("No se ha podido insertar el bloqueo. Intente más tarde.");
+                return toast.error("Verifique que no haya una hora o bloqueo previo.");
             }
 
             const respuestaBackend = await res.json();
@@ -893,13 +882,39 @@ function CalendarioContent() {
             }
 
             if (respuestaBackend.message === "sindisponibilidad") {
-                return toast.error("Ese horario ya tiene un bloqueo que se cruza con el rango seleccionado.");
+                return toast.error("Verifique que no haya una hora o bloqueo previo.");
             }
 
-            return toast.error("No se ha podido insertar el bloqueo.");
+            return toast.error("Verifique que no haya una hora o bloqueo previo.");
         } catch (error) {
             console.log(error);
-            return toast.error("No se ha podido registrar el bloqueo.");
+            return toast.error("Verifique que no haya una hora o bloqueo previo.");
+        }
+    }
+
+    async function eliminarBloqueo(id_bloqueo) {
+        try {
+            if (!id_bloqueo) {
+                return toast.error("Debe seleccionar el bloqueo que desea eliminar.");
+            }
+            const res = await fetch(`${API}/bloqueoAgenda/eliminarBloqueo`, {
+                method: "POST",
+                headers: {Accept: "application/json", "Content-Type": "application/json"},
+                body: JSON.stringify({id_bloqueo}),
+                mode: "cors"
+            });
+            if (!res.ok) {
+                return toast.error("No se ha podido eliminar el bloqueo. Intente más tarde.");
+            }
+            const respuestaBackend = await res.json();
+            if (respuestaBackend.message === true) {
+                await refrescarCalendario();
+                return toast.success("Se ha eliminado el bloqueo correctamente.");
+            }
+            return toast.error("No se ha podido eliminar el bloqueo. Intente más tarde.");
+        } catch (error) {
+            console.log(error);
+            return toast.error("No se ha podido eliminar el bloqueo. Contacte a soporte.");
         }
     }
 
@@ -1720,6 +1735,79 @@ function CalendarioContent() {
                             }}
                         />
                     </div>
+                </div>
+
+                {/* Lista de bloqueos */}
+                <div className="mt-8 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            <h2 className="text-sm font-semibold text-slate-700 tracking-wide uppercase">Bloqueos del profesional</h2>
+                            {dataBloqueos.length > 0 && (
+                                <span className="ml-2 inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                                    {dataBloqueos.length}
+                                </span>
+                            )}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setMostrarListaBloqueos((prev) => !prev)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-3.5 w-3.5 transition-transform ${mostrarListaBloqueos ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                            {mostrarListaBloqueos ? "Ocultar bloqueos" : "Mostrar todos los bloqueos"}
+                        </button>
+                    </div>
+
+                    {mostrarListaBloqueos && (
+                        <div className="p-4 md:p-5">
+                            {dataBloqueos.length === 0 ? (
+                                <p className="text-sm text-slate-400 text-center py-6">No hay bloqueos registrados para este profesional.</p>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-slate-200 text-left">
+                                                <th className="pb-2 pr-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Motivo</th>
+                                                <th className="pb-2 pr-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Fecha inicio</th>
+                                                <th className="pb-2 pr-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Hora inicio</th>
+                                                <th className="pb-2 pr-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Fecha fin</th>
+                                                <th className="pb-2 pr-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Hora fin</th>
+                                                <th className="pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {dataBloqueos.map((bloqueo) => (
+                                                <tr key={bloqueo.id_bloqueo} className="border-b border-slate-100 last:border-b-0">
+                                                    <td className="py-2.5 pr-4 font-medium text-slate-800">{bloqueo.motivo || "Sin motivo"}</td>
+                                                    <td className="py-2.5 pr-4 text-slate-600">{(bloqueo.fechaInicio ?? "").slice(0, 10)}</td>
+                                                    <td className="py-2.5 pr-4 text-slate-600">{bloqueo.horaInicio ?? "--"}</td>
+                                                    <td className="py-2.5 pr-4 text-slate-600">{(bloqueo.fechaFinalizacion ?? "").slice(0, 10)}</td>
+                                                    <td className="py-2.5 pr-4 text-slate-600">{bloqueo.horaFinalizacion ?? "--"}</td>
+                                                    <td className="py-2.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => eliminarBloqueo(bloqueo.id_bloqueo)}
+                                                            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                            </svg>
+                                                            Eliminar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
             </div>
