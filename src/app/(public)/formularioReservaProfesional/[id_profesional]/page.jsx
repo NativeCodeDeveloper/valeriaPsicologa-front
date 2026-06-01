@@ -97,7 +97,7 @@ export default function FormularioReservaProfesional() {
 
 
 
- /*
+
      async function pagarMercadoPago(
         nombrePaciente,
         apellidoPaciente,
@@ -158,21 +158,17 @@ export default function FormularioReservaProfesional() {
             console.log("Respuesta create-order:", data);
 
             if (data) {
-
                 //data.sandbox_init_point || PARA PRUEBAS LOCALES ||data?.init_point;
                 const checkoutUrl = data?.init_point;
                 console.log("checkoutUrl:", checkoutUrl);
-
                 if (checkoutUrl) {
                     console.log(checkoutUrl);
                     window.location.href = checkoutUrl;
-
                 } else {
                     return toast.error("No se puede procesar el pago. Problema a nivel del Link de init poiunt")
                 }
             } else {
                 return toast.error("No se puede procesar el pago. Intenet mas tarde.")
-
             }
         } catch (err) {
             console.error(err);
@@ -181,14 +177,14 @@ export default function FormularioReservaProfesional() {
         }
     }
 
- * */
 
 
 
 
 
 
-        id_profesional
+
+
 
     function comprobanteAgendamiento() {
         setNombrePaciente("");
@@ -424,7 +420,7 @@ export default function FormularioReservaProfesional() {
                                 if (e?.preventDefault) e.preventDefault();
                                 if (e?.stopPropagation) e.stopPropagation();
 
-                                return agendarSinPago(
+                                return pagarMercadoPago(
                                     nombrePaciente,
                                     apellidoPaciente,
                                     rut,
@@ -434,6 +430,9 @@ export default function FormularioReservaProfesional() {
                                     horaInicio,
                                     fechaFinalizacion,
                                     horaFin,
+                                    totalPago,
+                                    profesionalSeleccionado,
+                                    servicioSeleccionado,
                                     id_profesional
                                 );
                             }}
