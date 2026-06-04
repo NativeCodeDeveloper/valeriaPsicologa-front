@@ -61,6 +61,21 @@ const [id_profesional, setId_profesional] = useState("");
         return new Date(`${soloFecha}T${hora}`);
     }
 
+    async function validarDisponibilidadBloqueo(id_profesional, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion) {
+        const res = await fetch(`${API}/reservaPacientes/validar`, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({id_profesional, fechaInicio, horaInicio, fechaFinalizacion, horaFinalizacion}),
+            mode: "cors",
+        });
+
+        const respuestaBackend = await res.json().catch(() => null);
+        return res.ok && respuestaBackend?.message === true;
+    }
+
 
 
     async function buscarPorProfesionalBloqueo() {
@@ -102,6 +117,29 @@ const [id_profesional, setId_profesional] = useState("");
             return toast.error("Deben completarse todos los campos para ingresar el bloqueo al sistema.")
         }
 
+        if (fechaFinalizacion < fechaInicio) {
+            return toast.error("La fecha de termino siempre debe ser igual o mayor a la fecha de inicio.");
+        }
+
+        const inicio = convertirAFechaCalendario(fechaInicio, horaInicio);
+        const final = convertirAFechaCalendario(fechaFinalizacion, horaFinalizacion);
+
+        if (inicio >= final) {
+            return toast.error("Si la fecha de termino es igual a la fecha de inicio, la hora de termino debe ser mayor.");
+        }
+
+        const horarioDisponible = await validarDisponibilidadBloqueo(
+            id_profesional,
+            fechaInicio,
+            horaInicio,
+            fechaFinalizacion,
+            horaFinalizacion
+        );
+
+        if (!horarioDisponible) {
+            return toast.error("No pueden bloquearse si hay agendamientos o bloqueos previos");
+        }
+
         const res = await fetch(`${API}/bloqueoAgenda/InsertarBloqueo`,{
             method: 'POST',
             headers: {Accept: 'application/json',
@@ -111,7 +149,7 @@ const [id_profesional, setId_profesional] = useState("");
         })
 
             if (!res.ok) {
-                return toast.error("Verifique que no haya una hora o bloqueo previo.")
+                return toast.error("No se ha podido insertar bloqueo al sistema. Intente mas tarde.")
             }else{
 
                 const respuestaBackend = await res.json();
@@ -124,14 +162,18 @@ const [id_profesional, setId_profesional] = useState("");
                     setHoraFinalizacion("");
                     await verTodosLosBloqueos();
                     return toast.success('Se ha ingresado con exito el bloqueo al sistema. ')
+                }else if (respuestaBackend.message === "sindisponibilidad") {
+                    return toast.error("No pueden bloquearse si hay agendamientos o bloqueos previos");
+                }else if (respuestaBackend.message === "rangoInvalido") {
+                    return toast.error("La fecha de termino siempre debe ser igual o mayor a la fecha de inicio.");
                 }else {
-                    return toast.error("Verifique que no haya una hora o bloqueo previo.")
+                    return toast.error("No se ha podido insertar bloqueo al sistema. Intente mas tarde.")
                 }
 
             }
 
         }catch (error) {
-            return toast.error("Verifique que no haya una hora o bloqueo previo.")
+            return toast.error("No se ha podido insertar el bloqueo de horario. Contacte a soporte TI de nativecode ")
         }
     }
 
@@ -151,13 +193,6 @@ const [id_profesional, setId_profesional] = useState("");
             return toast.error('No fue posible cargar los datos de los bloqueos')
         }
     }
-
-    useEffect(() => {
-        verTodosLosBloqueos()
-    },[])
-
-
-
 
     async function eliminarBloqueo(id_bloqueo) {
         try {
@@ -181,7 +216,7 @@ const [id_profesional, setId_profesional] = useState("");
                     await verTodosLosBloqueos();
                     return toast.success('Se ha eliminado con exito el bloqueo del sistema. ')
                 }else {
-                    return toast.error("Verifique que no haya una hora o bloqueo previo.")
+                    return toast.error("No se ha podido insertar bloqueo al sistema. Intente mas tarde.")
                 }
             }
         }catch (error) {
@@ -208,7 +243,12 @@ const [id_profesional, setId_profesional] = useState("");
     }
 
     useEffect(() => {
-        filtrarPorProfesional(id_profesional)
+        if (id_profesional) {
+            filtrarPorProfesional(id_profesional);
+            return;
+        }
+
+        verTodosLosBloqueos();
     },[id_profesional])
 
     return (
@@ -227,7 +267,6 @@ const [id_profesional, setId_profesional] = useState("");
                 </div>
 
                 <div className="max-w-7xl mx-auto grid grid-cols-1 gap-4">
-                    {/* Card del Formulario */}
                     <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
                         <div className="relative p-4">
@@ -246,7 +285,6 @@ const [id_profesional, setId_profesional] = useState("");
                             <div className="h-px w-full bg-slate-100 my-4"></div>
 
                             <div className="space-y-4">
-                                {/* Paso 1: Profesional */}
                                 <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-[10px] font-bold">1</span>
@@ -263,7 +301,6 @@ const [id_profesional, setId_profesional] = useState("");
                                     />
                                 </div>
 
-                                {/* Paso 2: Rango de fechas */}
                                 <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-[10px] font-bold">2</span>
@@ -281,7 +318,6 @@ const [id_profesional, setId_profesional] = useState("");
                                     </div>
                                 </div>
 
-                                {/* Paso 3: Motivo */}
                                 <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-600 text-[10px] font-bold">3</span>
@@ -306,16 +342,11 @@ const [id_profesional, setId_profesional] = useState("");
                                             Ingresar Bloqueo
                                         </span>
                                     </button>
-
-
-
-
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Card de la Tabla */}
                     <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="relative p-4">
                             <div className="flex items-center gap-3 mb-5">
@@ -324,9 +355,7 @@ const [id_profesional, setId_profesional] = useState("");
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                     </svg>
                                 </div>
-                                <h2 className="text-base font-semibold text-slate-900">
-                                    Bloqueos Activos
-                                </h2>
+                                <h2 className="text-base font-semibold text-slate-900">Bloqueos Activos</h2>
                             </div>
 
                             <div>
@@ -383,7 +412,6 @@ const [id_profesional, setId_profesional] = useState("");
                 </div>
 
                 <div className="max-w-7xl mx-auto grid grid-cols-1 gap-6">
-                    {/* Card del Formulario */}
                     <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
                         <div className="relative p-6">
@@ -402,7 +430,6 @@ const [id_profesional, setId_profesional] = useState("");
                             <div className="h-px w-full bg-slate-100 my-5"></div>
 
                             <div className="space-y-5">
-                                {/* Paso 1: Profesional */}
                                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                     <div className="flex items-center gap-2 mb-3">
                                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-[11px] font-bold">1</span>
@@ -419,7 +446,6 @@ const [id_profesional, setId_profesional] = useState("");
                                     />
                                 </div>
 
-                                {/* Paso 2: Rango de fechas */}
                                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                     <div className="flex items-center gap-2 mb-3">
                                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-[11px] font-bold">2</span>
@@ -437,7 +463,6 @@ const [id_profesional, setId_profesional] = useState("");
                                     </div>
                                 </div>
 
-                                {/* Paso 3: Motivo */}
                                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                     <div className="flex items-center gap-2 mb-3">
                                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-[11px] font-bold">3</span>
@@ -456,13 +481,10 @@ const [id_profesional, setId_profesional] = useState("");
                                         className="group relative py-2.5 px-8 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 shadow-md"
                                     >
                                         <span className="flex items-center justify-center gap-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            </svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
                                             Cargar Todos los Bloqueos
                                         </span>
                                     </button>
-
-
 
                                     <button
                                         onClick={() => insertarBloqueoHorario(id_profesional,fechaInicio,horaInicio,fechaFinalizacion,horaFinalizacion,motivo)}
@@ -480,7 +502,6 @@ const [id_profesional, setId_profesional] = useState("");
                         </div>
                     </div>
 
-                    {/* Card de la Tabla */}
                     <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="relative p-6">
                             <div className="flex items-center gap-3 mb-6">
@@ -489,9 +510,7 @@ const [id_profesional, setId_profesional] = useState("");
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                     </svg>
                                 </div>
-                                <h2 className="text-base font-semibold text-slate-900">
-                                    Bloqueos Activos
-                                </h2>
+                                <h2 className="text-base font-semibold text-slate-900">Bloqueos Activos</h2>
                             </div>
 
                             <div>
