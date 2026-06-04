@@ -727,7 +727,7 @@ function CalendarioContent() {
         return {backgroundColor: paleta.backgroundColor, color: paleta.color, border: `1px solid ${paleta.borderColor}`, borderLeft: `4px solid ${paleta.accentColor}`, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.55)"};
     }
 
-    const accionesRapidasEstado = [{valor: "asiste", etiqueta: "Asiste"}, {valor: "no asiste", etiqueta: "No asiste"}, {valor: "finalizado", etiqueta: "Finalizado"}];
+    const accionesRapidasEstado = [{valor: "reservada", etiqueta: "Reservada"}, {valor: "confirmada", etiqueta: "Confirmada"}, {valor: "anulada", etiqueta: "Anulada"}, {valor: "asiste", etiqueta: "Asiste"}, {valor: "no asiste", etiqueta: "No asiste"}, {valor: "finalizado", etiqueta: "Finalizado"}];
     const leyendaEstados = [{valor: "reservada", etiqueta: "Reservada"}, {valor: "confirmada", etiqueta: "Confirmada"}, {valor: "anulada", etiqueta: "Anulada"}, {valor: "asiste", etiqueta: "Asiste"}, {valor: "no asiste", etiqueta: "No asiste"}, {valor: "finalizado", etiqueta: "Finalizado"}];
 
     const eventStyleGetter = (event) => {
